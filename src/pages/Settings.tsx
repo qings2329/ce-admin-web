@@ -29,8 +29,20 @@ export function Settings() {
       /* 忽略 */
     }
   };
+  // 启动时从后端拉取偏好并应用；后端不可用时回退到初始的 localStorage 值。
+  const loadPrefs = async () => {
+    try {
+      const p = await api.getPreferences();
+      if (p?.language) setLocale(p.language as typeof locale);
+      if (p?.theme) setPrefTheme(p.theme as ThemeId);
+      if (p && "timezone" in p) setPrefTz(p.timezone || "");
+    } catch {
+      /* 后端不可用时保留 localStorage（初始 state 已读取） */
+    }
+  };
   useEffect(() => {
     loadMe();
+    loadPrefs();
   }, []);
 
   const changePw = async (e: React.FormEvent) => {
@@ -79,11 +91,18 @@ export function Settings() {
     }
   };
 
-  const savePrefs = () => {
+  const savePrefs = async () => {
+    // 先立即应用并写入 localStorage（兜底缓存），保证本地体验不依赖后端。
     localStorage.setItem(THEME_STORAGE_KEY, prefTheme);
     applyTheme(prefTheme);
     setTimeZone(prefTz);
-    setPrefMsg(t("settings.prefSaved"));
+    try {
+      await api.updatePreferences({ language: locale, theme: prefTheme, timezone: prefTz });
+      setPrefMsg(t("settings.prefSaved"));
+    } catch (e: any) {
+      // 后端同步失败但本地已保存：提示失败详情，用户可稍后重试。
+      setPrefMsg(t("settings.prefFail", { err: e?.message ?? "" }));
+    }
   };
 
   const onTheme = (v: ThemeId) => setPrefTheme(v);
