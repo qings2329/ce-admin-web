@@ -168,6 +168,14 @@ export const api = {
 
   // ---- 当前管理员自身 ----
   me: () => request<any>("/api/admin/me"),
+
+  // ---- 当前管理员自身偏好（语言/主题/时区，跨设备持久化，localStorage 为兜底缓存） ----
+  getPreferences: () =>
+    request<{ admin_id: number; language: string; theme: string; timezone: string }>(
+      "/api/admin/preferences",
+    ),
+  updatePreferences: (p: { language: string; theme: string; timezone: string }) =>
+    request("/api/admin/preferences", { method: "PUT", body: JSON.stringify(p) }),
   changePassword: (old_password: string, new_password: string) =>
     request("/api/admin/password", {
       method: "POST",
