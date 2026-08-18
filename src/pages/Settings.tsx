@@ -1,7 +1,11 @@
 import { useState, useEffect } from "react";
 import { api } from "../api/client";
+import { useI18n, LOCALES } from "../i18n";
+import { applyTheme, THEMES, THEME_STORAGE_KEY, type ThemeId } from "../lib/theme";
+import { getTimeZone, setTimeZone, COMMON_TZ } from "../lib/timezone";
 
 export function Settings() {
+  const { t, locale, setLocale } = useI18n();
   const [me, setMe] = useState<any>(null);
   const [oldPw, setOldPw] = useState("");
   const [newPw, setNewPw] = useState("");
@@ -11,6 +15,13 @@ export function Settings() {
   const [code, setCode] = useState("");
   const [mfaMsg, setMfaMsg] = useState<string | null>(null);
 
+  // 偏好（语言/主题/时区）持久化到 localStorage。
+  const [prefTheme, setPrefTheme] = useState<ThemeId>(
+    () => (localStorage.getItem(THEME_STORAGE_KEY) as ThemeId) || "dark",
+  );
+  const [prefTz, setPrefTz] = useState<string>(() => getTimeZone());
+  const [prefMsg, setPrefMsg] = useState<string | null>(null);
+
   const loadMe = async () => {
     try {
       setMe(await api.me());
@@ -18,8 +29,20 @@ export function Settings() {
       /* 忽略 */
     }
   };
+  // 启动时从后端拉取偏好并应用；后端不可用时回退到初始的 localStorage 值。
+  const loadPrefs = async () => {
+    try {
+      const p = await api.getPreferences();
+      if (p?.language) setLocale(p.language as typeof locale);
+      if (p?.theme) setPrefTheme(p.theme as ThemeId);
+      if (p && "timezone" in p) setPrefTz(p.timezone || "");
+    } catch {
+      /* 后端不可用时保留 localStorage（初始 state 已读取） */
+    }
+  };
   useEffect(() => {
     loadMe();
+    loadPrefs();
   }, []);
 
   const changePw = async (e: React.FormEvent) => {
@@ -27,11 +50,11 @@ export function Settings() {
     setPwMsg(null);
     try {
       await api.changePassword(oldPw, newPw);
-      setPwMsg("密码已修改");
+      setPwMsg(t("settings.pwChanged"));
       setOldPw("");
       setNewPw("");
     } catch (e: any) {
-      setPwMsg(e?.message ?? "修改失败");
+      setPwMsg(e?.message ?? t("settings.pwChangeFailed"));
     }
   };
 
@@ -40,7 +63,7 @@ export function Settings() {
     try {
       setSetup(await api.mfaSetup());
     } catch (e: any) {
-      setMfaMsg(e?.message ?? "初始化失败");
+      setMfaMsg(e?.message ?? t("settings.mfaInitFailed"));
     }
   };
   const enable = async () => {
@@ -48,71 +71,87 @@ export function Settings() {
     setMfaMsg(null);
     try {
       await api.mfaEnable(code);
-      setMfaMsg("MFA 已启用");
+      setMfaMsg(t("settings.mfaEnabled"));
       setSetup(null);
       setCode("");
       loadMe();
     } catch (e: any) {
-      setMfaMsg(e?.message ?? "启用失败");
+      setMfaMsg(e?.message ?? t("settings.mfaEnableFailed"));
     }
   };
   const disable = async () => {
     setMfaMsg(null);
     try {
       await api.mfaDisable(code || undefined);
-      setMfaMsg("MFA 已关闭");
+      setMfaMsg(t("settings.mfaDisabled"));
       setCode("");
       loadMe();
     } catch (e: any) {
-      setMfaMsg(e?.message ?? "关闭失败");
+      setMfaMsg(e?.message ?? t("settings.mfaDisableFailed"));
     }
   };
 
+  const savePrefs = async () => {
+    // 先立即应用并写入 localStorage（兜底缓存），保证本地体验不依赖后端。
+    localStorage.setItem(THEME_STORAGE_KEY, prefTheme);
+    applyTheme(prefTheme);
+    setTimeZone(prefTz);
+    try {
+      await api.updatePreferences({ language: locale, theme: prefTheme, timezone: prefTz });
+      setPrefMsg(t("settings.prefSaved"));
+    } catch (e: any) {
+      // 后端同步失败但本地已保存：提示失败详情，用户可稍后重试。
+      setPrefMsg(t("settings.prefFail", { err: e?.message ?? "" }));
+    }
+  };
+
+  const onTheme = (v: ThemeId) => setPrefTheme(v);
+
   return (
     <div className="page">
-      <h1>安全设置</h1>
+      <h1>{t("settings.title")}</h1>
       {(pwMsg || mfaMsg) && <div className="alert-info">{pwMsg || mfaMsg}</div>}
 
       {me && (
         <div className="kv-grid">
           <div className="kv">
-            <span className="kv-k">当前账户</span>
+            <span className="kv-k">{t("settings.currentAccount")}</span>
             <span className="kv-v">{me.username}</span>
           </div>
           <div className="kv">
-            <span className="kv-k">角色</span>
+            <span className="kv-k">{t("col.role")}</span>
             <span className="kv-v">{me.role_name}</span>
           </div>
           <div className="kv">
-            <span className="kv-k">MFA 状态</span>
-            <span className="kv-v">{me.totp_enabled ? "已启用" : "未启用"}</span>
+            <span className="kv-k">{t("settings.mfaStatus")}</span>
+            <span className="kv-v">{me.totp_enabled ? t("common.enabled") : t("common.disabled")}</span>
           </div>
         </div>
       )}
 
-      <h2>修改密码</h2>
+      <h2>{t("settings.changePwd")}</h2>
       <form className="inline-form" onSubmit={changePw}>
         <input
-          placeholder="旧密码"
+          placeholder={t("settings.oldPwd")}
           type="password"
           value={oldPw}
           onChange={(e) => setOldPw(e.target.value)}
         />
         <input
-          placeholder="新密码（至少 6 位）"
+          placeholder={t("settings.newPwd")}
           type="password"
           value={newPw}
           onChange={(e) => setNewPw(e.target.value)}
         />
         <button className="btn" type="submit">
-          修改密码
+          {t("settings.changePwd")}
         </button>
       </form>
 
-      <h2>Google 验证器（两步验证）</h2>
+      <h2>{t("settings.mfa")}</h2>
       {me?.totp_enabled ? (
         <div className="panel">
-          <p>MFA 已启用，登录时需输入动态码。关闭请先输入当前 6 位动态码：</p>
+          <p>{t("settings.mfaEnabledNote")}</p>
           <form
             className="inline-form"
             onSubmit={(e) => {
@@ -121,22 +160,22 @@ export function Settings() {
             }}
           >
             <input
-              placeholder="当前动态码"
+              placeholder={t("settings.curCodePh")}
               value={code}
               onChange={(e) => setCode(e.target.value)}
             />
             <button className="btn" type="submit">
-              关闭 MFA
+              {t("settings.disableMfa")}
             </button>
           </form>
         </div>
       ) : setup ? (
         <div className="panel">
-          <p>1. 在 Google Authenticator 中选择「手动输入设置项」，填入下方密钥：</p>
+          <p>{t("settings.step1")}</p>
           <pre className="secret-box">{setup.secret}</pre>
-          <p>或在兼容应用中使用 otpauth URI：</p>
+          <p>{t("settings.step2otp")}</p>
           <pre className="secret-box">{setup.otpauth_uri}</pre>
-          <p>2. 输入 6 位动态码以启用：</p>
+          <p>{t("settings.step2")}</p>
           <form
             className="inline-form"
             onSubmit={(e) => {
@@ -145,23 +184,72 @@ export function Settings() {
             }}
           >
             <input
-              placeholder="6 位动态码"
+              placeholder={t("settings.codePh")}
               value={code}
               onChange={(e) => setCode(e.target.value)}
             />
             <button className="btn" type="submit">
-              启用 MFA
+              {t("settings.enableMfa")}
             </button>
           </form>
         </div>
       ) : (
         <div className="panel">
-          <p>尚未启用两步验证。启用后登录需输入动态码，显著提升账户安全。</p>
+          <p>{t("settings.notEnabled")}</p>
           <button className="btn" onClick={startSetup}>
-            开始绑定
+            {t("settings.bind")}
           </button>
         </div>
       )}
+
+      <h2>{t("settings.preferences")}</h2>
+      <div className="kv-grid">
+        <div className="kv">
+          <span className="kv-k">{t("settings.language")}</span>
+          <select
+            className="nav-select"
+            value={locale}
+            onChange={(e) => setLocale(e.target.value as typeof locale)}
+          >
+            {LOCALES.map((lc) => (
+              <option key={lc.value} value={lc.value}>
+                {lc.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="kv">
+          <span className="kv-k">{t("settings.theme")}</span>
+          <select
+            className="nav-select"
+            value={prefTheme}
+            onChange={(e) => onTheme(e.target.value as ThemeId)}
+          >
+            {THEMES.map((th) => (
+              <option key={th.value} value={th.value}>
+                {t(th.key)}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="kv">
+          <span className="kv-k">{t("settings.timezone")}</span>
+          <select
+            className="nav-select"
+            value={prefTz}
+            onChange={(e) => setPrefTz(e.target.value)}
+          >
+            <option value="">{t("settings.tzAuto")}</option>
+            {COMMON_TZ.map((tz) => (
+              <option key={tz} value={tz}>{tz}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+      <button className="btn" onClick={savePrefs}>
+        {t("settings.savePrefs")}
+      </button>
+      {prefMsg && <div className="alert-info">{prefMsg}</div>}
     </div>
   );
 }

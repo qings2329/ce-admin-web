@@ -12,11 +12,16 @@ import { Coins } from "./pages/Coins";
 import { Admins } from "./pages/Admins";
 import { Roles } from "./pages/Roles";
 import { Settings } from "./pages/Settings";
+import { Announcements } from "./pages/Announcements";
+import { Orders } from "./pages/Orders";
+import { Dashboard } from "./pages/Dashboard";
+import { Audit } from "./pages/Audit";
+import { ApiKeys } from "./pages/ApiKeys";
 
 function useHash() {
-  const [hash, setHash] = useState(location.hash || "#/risk");
+  const [hash, setHash] = useState(location.hash || "#/dashboard");
   useEffect(() => {
-    const on = () => setHash(location.hash || "#/risk");
+    const on = () => setHash(location.hash || "#/dashboard");
     window.addEventListener("hashchange", on);
     return () => window.removeEventListener("hashchange", on);
   }, []);
@@ -24,6 +29,7 @@ function useHash() {
 }
 
 const PAGES: Record<string, () => JSX.Element> = {
+  "/dashboard": Dashboard,
   "/risk": Risk,
   "/users": Users,
   "/symbols": Symbols,
@@ -34,6 +40,10 @@ const PAGES: Record<string, () => JSX.Element> = {
   "/admins": Admins,
   "/roles": Roles,
   "/settings": Settings,
+  "/announcements": Announcements,
+  "/orders": Orders,
+  "/audit": Audit,
+  "/apikeys": ApiKeys,
 };
 
 function Router() {
@@ -47,7 +57,7 @@ function Router() {
     return <Login />;
   }
 
-  const Page = PAGES[path] ?? Risk;
+  const Page = PAGES[path] ?? Dashboard;
   return (
     <>
       <NavBar />

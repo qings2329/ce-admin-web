@@ -1,10 +1,15 @@
 import { useState } from "react";
 import { api } from "../api/client";
-import { useFetch } from "../lib/useFetch";
+import { usePaged } from "../lib/usePaged";
 import { ApiTable } from "../components/ApiTable";
+import { Pager } from "../components/Pager";
+import { useI18n } from "../i18n";
+import { formatDateTime } from "../lib/timezone";
 
 export function Coins() {
-  const { data, loading, error, reload } = useFetch(api.listCoins);
+  const { t } = useI18n();
+  const { items, total, limit, page, loading, error, reload, changePage, changeLimit } =
+    usePaged((p) => api.listCoins(p));
   const [symbol, setSymbol] = useState("");
   const [name, setName] = useState("");
   const [chain, setChain] = useState("");
@@ -28,40 +33,41 @@ export function Coins() {
       setChain("");
       reload();
     } catch (e: any) {
-      setMsg(e?.message ?? "创建失败");
+      setMsg(e?.message ?? t('common.createFailed'));
     }
   };
 
   return (
     <div className="page">
-      <h1>币种管理</h1>
+      <h1>{t('coins.title')}</h1>
       {error && <div className="alert-error">{error}</div>}
       {msg && <div className="alert-info">{msg}</div>}
 
       <form className="inline-form" onSubmit={create}>
-        <input placeholder="符号(如 BTC)" value={symbol} onChange={(e) => setSymbol(e.target.value)} />
-        <input placeholder="名称(如 Bitcoin)" value={name} onChange={(e) => setName(e.target.value)} />
-        <input placeholder="所属公链" value={chain} onChange={(e) => setChain(e.target.value)} />
-        <input placeholder="精度" value={precision} onChange={(e) => setPrecision(e.target.value)} type="number" />
-        <input placeholder="提币手续费" value={fee} onChange={(e) => setFee(e.target.value)} type="number" step="0.0001" />
+        <input placeholder={t('coins.symbolPh')} value={symbol} onChange={(e) => setSymbol(e.target.value)} />
+        <input placeholder={t('coins.namePh')} value={name} onChange={(e) => setName(e.target.value)} />
+        <input placeholder={t('coins.chainPh')} value={chain} onChange={(e) => setChain(e.target.value)} />
+        <input placeholder={t('coins.precisionPh')} value={precision} onChange={(e) => setPrecision(e.target.value)} type="number" />
+        <input placeholder={t('coins.feePh')} value={fee} onChange={(e) => setFee(e.target.value)} type="number" step="0.0001" />
         <button className="btn" type="submit">
-          新币种
+          {t('coins.create')}
         </button>
       </form>
 
       <ApiTable
-        title="币种列表"
-        rows={data ?? []}
+        title={t('coins.listTitle')}
+        rows={items}
         loading={loading}
         onReload={reload}
+        actions={<Pager total={total} limit={limit} page={page} onChange={changePage} onLimitChange={changeLimit} />}
         columns={[
           { key: "id", label: "ID" },
-          { key: "symbol", label: "符号" },
-          { key: "name", label: "名称" },
-          { key: "chain", label: "公链" },
-          { key: "precision", label: "精度" },
-          { key: "withdraw_fee", label: "提币手续费" },
-          { key: "updated_at", label: "更新时间" },
+          { key: "symbol", label: t('col.symbol') },
+          { key: "name", label: t('col.name') },
+          { key: "chain", label: t('col.chain') },
+          { key: "precision", label: t('col.precision') },
+          { key: "withdraw_fee", label: t('col.withdrawFee') },
+          { key: "updated_at", label: t('col.updatedAt'), render: (row: any) => formatDateTime(row.updated_at) },
         ]}
       />
     </div>
