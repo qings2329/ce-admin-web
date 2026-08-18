@@ -1,10 +1,14 @@
 import { useState } from "react";
 import { api } from "../api/client";
-import { useFetch } from "../lib/useFetch";
+import { usePaged } from "../lib/usePaged";
 import { ApiTable } from "../components/ApiTable";
+import { Pager } from "../components/Pager";
+import { useI18n } from "../i18n";
 
 export function Chains() {
-  const { data, loading, error, reload } = useFetch(api.listChains);
+  const { t } = useI18n();
+  const { items, total, limit, page, loading, error, reload, changePage, changeLimit } =
+    usePaged((p) => api.listChains(p));
   const [name, setName] = useState("");
   const [symbol, setSymbol] = useState("");
   const [confirmations, setConfirmations] = useState("3");
@@ -15,7 +19,7 @@ export function Chains() {
       await api.updateChain(row.id, { ...row, deposit_enabled: !row.deposit_enabled });
       reload();
     } catch (e: any) {
-      setMsg(e?.message ?? "操作失败");
+      setMsg(e?.message ?? t('common.opFailed'));
     }
   };
 
@@ -24,7 +28,7 @@ export function Chains() {
       await api.updateChain(row.id, { ...row, withdraw_enabled: !row.withdraw_enabled });
       reload();
     } catch (e: any) {
-      setMsg(e?.message ?? "操作失败");
+      setMsg(e?.message ?? t('common.opFailed'));
     }
   };
 
@@ -43,47 +47,48 @@ export function Chains() {
       setSymbol("");
       reload();
     } catch (e: any) {
-      setMsg(e?.message ?? "创建失败");
+      setMsg(e?.message ?? t('common.createFailed'));
     }
   };
 
   return (
     <div className="page">
-      <h1>公链管理</h1>
+      <h1>{t('chains.title')}</h1>
       {error && <div className="alert-error">{error}</div>}
       {msg && <div className="alert-info">{msg}</div>}
 
       <form className="inline-form" onSubmit={create}>
-        <input placeholder="链名(如 Bitcoin)" value={name} onChange={(e) => setName(e.target.value)} />
-        <input placeholder="符号(如 BTC)" value={symbol} onChange={(e) => setSymbol(e.target.value)} />
-        <input placeholder="确认数" value={confirmations} onChange={(e) => setConfirmations(e.target.value)} type="number" />
+        <input placeholder={t('chains.namePh')} value={name} onChange={(e) => setName(e.target.value)} />
+        <input placeholder={t('chains.symbolPh')} value={symbol} onChange={(e) => setSymbol(e.target.value)} />
+        <input placeholder={t('chains.confirmationsPh')} value={confirmations} onChange={(e) => setConfirmations(e.target.value)} type="number" />
         <button className="btn" type="submit">
-          新建公链
+          {t('chains.create')}
         </button>
       </form>
 
       <ApiTable
-        title="公链列表"
-        rows={data ?? []}
+        title={t('chains.listTitle')}
+        rows={items}
         loading={loading}
         onReload={reload}
+        actions={<Pager total={total} limit={limit} page={page} onChange={changePage} onLimitChange={changeLimit} />}
         columns={[
-          { key: "id", label: "ID" },
-          { key: "name", label: "名称" },
-          { key: "symbol", label: "符号" },
-          { key: "confirmations", label: "确认数" },
-          { key: "deposit_enabled", label: "充币", render: (r: any) => (r.deposit_enabled ? "开" : "关") },
-          { key: "withdraw_enabled", label: "提币", render: (r: any) => (r.withdraw_enabled ? "开" : "关") },
+          { key: "id", label: t('col.id') },
+          { key: "name", label: t('col.name') },
+          { key: "symbol", label: t('col.symbol') },
+          { key: "confirmations", label: t('col.confirmations') },
+          { key: "deposit_enabled", label: t('col.deposit'), render: (r: any) => (r.deposit_enabled ? t('common.on') : t('common.off')) },
+          { key: "withdraw_enabled", label: t('col.withdraw'), render: (r: any) => (r.withdraw_enabled ? t('common.on') : t('common.off')) },
           {
             key: "op",
-            label: "操作",
+            label: t('col.actions'),
             render: (row: any) => (
               <span>
                 <button className="btn" onClick={() => toggleDeposit(row)}>
-                  充币{row.deposit_enabled ? "关" : "开"}
+                  {row.deposit_enabled ? t('chains.depositOff') : t('chains.depositOn')}
                 </button>{" "}
                 <button className="btn" onClick={() => toggleWithdraw(row)}>
-                  提币{row.withdraw_enabled ? "关" : "开"}
+                  {row.withdraw_enabled ? t('chains.withdrawOff') : t('chains.withdrawOn')}
                 </button>
               </span>
             ),
