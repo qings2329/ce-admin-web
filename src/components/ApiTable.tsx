@@ -1,4 +1,5 @@
 import { type ReactNode } from "react";
+import { useI18n } from "../i18n";
 
 interface Column {
   key: string;
@@ -26,8 +27,10 @@ export function ApiTable({
   error,
   onReload,
   actions,
-  emptyText = "暂无数据",
+  emptyText,
 }: ApiTableProps) {
+  const { t } = useI18n();
+  const resolvedEmptyText = emptyText ?? t('common.noData');
   const cols: Column[] =
     columns ??
     (rows.length > 0
@@ -42,14 +45,14 @@ export function ApiTable({
           {actions}
           {onReload && (
             <button className="btn" onClick={onReload}>
-              刷新
+              {t('common.refresh')}
             </button>
           )}
         </div>
       </div>
       {error && <div className="alert-error">{error}</div>}
-      {loading && <div className="muted">加载中…</div>}
-      {!loading && !error && rows.length === 0 && <div className="muted">{emptyText}</div>}
+      {loading && <div className="muted">{t('common.loading')}</div>}
+      {!loading && !error && rows.length === 0 && <div className="muted">{resolvedEmptyText}</div>}
       {!loading && !error && rows.length > 0 && (
         <div className="table-wrap">
           <table>

@@ -1,10 +1,14 @@
 import { useState } from "react";
 import { api } from "../api/client";
-import { useFetch } from "../lib/useFetch";
+import { usePaged } from "../lib/usePaged";
 import { ApiTable } from "../components/ApiTable";
+import { Pager } from "../components/Pager";
+import { useI18n } from "../i18n";
 
 export function Symbols() {
-  const { data, loading, error, reload } = useFetch(api.listSymbols);
+  const { t } = useI18n();
+  const { items, total, limit, page, loading, error, reload, changePage, changeLimit } =
+    usePaged((p) => api.listSymbols(p));
   const [symbol, setSymbol] = useState("");
   const [fee, setFee] = useState("0.001");
   const [lev, setLev] = useState("20");
@@ -16,7 +20,7 @@ export function Symbols() {
       await api.upsertSymbol({ ...row, status: next });
       reload();
     } catch (e: any) {
-      setMsg(e?.message ?? "操作失败");
+      setMsg(e?.message ?? t('common.opFailed'));
     }
   };
 
@@ -37,44 +41,45 @@ export function Symbols() {
       setSymbol("");
       reload();
     } catch (e: any) {
-      setMsg(e?.message ?? "创建失败");
+      setMsg(e?.message ?? t('common.createFailed'));
     }
   };
 
   return (
     <div className="page">
-      <h1>交易对 / 参数配置</h1>
+      <h1>{t('symbols.title')}</h1>
       {error && <div className="alert-error">{error}</div>}
       {msg && <div className="alert-info">{msg}</div>}
 
       <form className="inline-form" onSubmit={create}>
-        <input placeholder="交易对(如 BTC_USDT)" value={symbol} onChange={(e) => setSymbol(e.target.value)} />
-        <input placeholder="手续费率" value={fee} onChange={(e) => setFee(e.target.value)} type="number" step="0.0001" />
-        <input placeholder="最大杠杆" value={lev} onChange={(e) => setLev(e.target.value)} type="number" />
+        <input placeholder={t('symbols.pairPh')} value={symbol} onChange={(e) => setSymbol(e.target.value)} />
+        <input placeholder={t('symbols.feeRatePh')} value={fee} onChange={(e) => setFee(e.target.value)} type="number" step="0.0001" />
+        <input placeholder={t('symbols.maxLevPh')} value={lev} onChange={(e) => setLev(e.target.value)} type="number" />
         <button className="btn" type="submit">
-          新建交易对
+          {t('symbols.create')}
         </button>
       </form>
 
       <ApiTable
-        title="交易对列表"
-        rows={data ?? []}
+        title={t('symbols.listTitle')}
+        rows={items}
         loading={loading}
         onReload={reload}
+        actions={<Pager total={total} limit={limit} page={page} onChange={changePage} onLimitChange={changeLimit} />}
         columns={[
-          { key: "symbol", label: "交易对" },
-          { key: "base", label: "基础币" },
-          { key: "quote", label: "计价币" },
-          { key: "status", label: "状态" },
-          { key: "fee_rate", label: "手续费率" },
-          { key: "max_leverage", label: "最大杠杆" },
-          { key: "min_qty", label: "最小数量" },
+          { key: "symbol", label: t('col.symbolPair') },
+          { key: "base", label: t('col.base') },
+          { key: "quote", label: t('col.quote') },
+          { key: "status", label: t('col.status') },
+          { key: "fee_rate", label: t('col.feeRate') },
+          { key: "max_leverage", label: t('col.maxLeverage') },
+          { key: "min_qty", label: t('col.minQty') },
           {
             key: "op",
-            label: "操作",
+            label: t('col.actions'),
             render: (row: any) => (
               <button className="btn" onClick={() => toggle(row)}>
-                {row.status === "online" ? "下线" : "上线"}
+                {row.status === "online" ? t('symbols.offline') : t('symbols.online')}
               </button>
             ),
           },
