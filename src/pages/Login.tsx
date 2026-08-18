@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useAuth } from "../lib/auth";
 import { ApiError } from "../api/client";
+import { useI18n } from "../i18n";
 
 export function Login() {
   const { login } = useAuth();
+  const { t } = useI18n();
   const [username, setUsername] = useState("admin");
   const [password, setPassword] = useState("admin123");
   const [totp, setTotp] = useState("");
@@ -18,7 +20,7 @@ export function Login() {
       await login(username, password, totp || undefined);
       location.hash = "/risk";
     } catch (e) {
-      const msg = e instanceof ApiError ? e.message : "登录失败";
+      const msg = e instanceof ApiError ? e.message : t("login.failed");
       setErr(msg);
     } finally {
       setBusy(false);
@@ -28,14 +30,14 @@ export function Login() {
   return (
     <div className="login-wrap">
       <form className="login-card" onSubmit={submit}>
-        <h1>管理后台登录</h1>
+        <h1>{t("login.title")}</h1>
         {err && <div className="alert-error">{err}</div>}
         <label>
-          用户名
+          {t("login.username")}
           <input value={username} onChange={(e) => setUsername(e.target.value)} />
         </label>
         <label>
-          密码
+          {t("login.password")}
           <input
             type="password"
             value={password}
@@ -43,18 +45,18 @@ export function Login() {
           />
         </label>
         <label>
-          动态码（若已启用两步验证）
+          {t("login.totp")}
           <input
             value={totp}
             onChange={(e) => setTotp(e.target.value)}
-            placeholder="6 位 Google 验证器动态码"
+            placeholder={t("login.totpPh")}
             inputMode="numeric"
           />
         </label>
         <button className="btn-primary" disabled={busy}>
-          {busy ? "登录中…" : "登录"}
+          {busy ? t("login.submitting") : t("login.submit")}
         </button>
-        <p className="muted">默认凭据 admin / admin123（原型）</p>
+        <p className="muted">{t("login.demoHint")}</p>
       </form>
     </div>
   );

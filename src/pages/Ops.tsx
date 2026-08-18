@@ -1,12 +1,22 @@
 import { useState } from "react";
+import { useI18n } from "../i18n";
+import { formatDateTime } from "../lib/timezone";
 import { api } from "../api/client";
 import { useFetch } from "../lib/useFetch";
+import { usePaged } from "../lib/usePaged";
 import { ApiTable } from "../components/ApiTable";
+import { Pager } from "../components/Pager";
+
+// 结算/成交时间一般为 Unix 毫秒；统一按时区格式化展示。
+function fmtTime(ts?: number): string {
+  return formatDateTime(ts);
+}
 
 export function Ops() {
+  const { t } = useI18n();
   const ledger = useFetch(api.getLedger);
   const services = useFetch(api.getServices);
-  const notifs = useFetch(api.listNotifications);
+  const notifs = usePaged((p) => api.listNotifications(p));
 
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -22,7 +32,7 @@ export function Ops() {
       setBody("");
       notifs.reload();
     } catch (e: any) {
-      setMsg(e?.message ?? "创建失败");
+      setMsg(e?.message ?? t('common.createFailed'));
     }
   };
 
@@ -31,7 +41,7 @@ export function Ops() {
       await api.deleteNotification(id);
       notifs.reload();
     } catch (e: any) {
-      setMsg(e?.message ?? "删除失败");
+      setMsg(e?.message ?? t('common.deleteFailed'));
     }
   };
 
@@ -39,82 +49,136 @@ export function Ops() {
 
   return (
     <div className="page">
-      <h1>运营看板</h1>
+      <h1>{t('ops.title')}</h1>
       {msg && <div className="alert-info">{msg}</div>}
 
-      <h2>账本对账</h2>
+      <h2>{t('ops.ledger')}</h2>
       <div className="kv-grid">
         <div className="kv">
-          <span className="kv-k">总资产</span>
+          <span className="kv-k">{t('ops.totalAssets')}</span>
           <span className="kv-v">{ld?.total_assets ?? "-"}</span>
         </div>
         <div className="kv">
-          <span className="kv-k">结算余额</span>
+          <span className="kv-k">{t('ops.settleBalance')}</span>
           <span className="kv-v">{ld?.settlement_balance ?? "-"}</span>
         </div>
         <div className="kv">
-          <span className="kv-k">已对账</span>
-          <span className="kv-v">{ld?.reconciled ? "是" : "否"}</span>
+          <span className="kv-k">{t('ops.reconciled')}</span>
+          <span className="kv-v">{ld?.reconciled ? t('common.yes') : t('common.no')}</span>
         </div>
         <div className="kv">
-          <span className="kv-k">差异</span>
+          <span className="kv-k">{t('ops.diff')}</span>
           <span className="kv-v">{ld?.discrepancy ?? "-"}</span>
         </div>
       </div>
 
+      <h2>{t('ops.settleRealTime')}</h2>
+      {ld?.settlement?.enabled ? (
+        <>
+          <div className="kv-grid">
+            <div className="kv">
+              <span className="kv-k">{t('ops.totalTrades')}</span>
+              <span className="kv-v">{String(ld.settlement.total_trades ?? 0)}</span>
+            </div>
+            <div className="kv">
+              <span className="kv-k">{t('ops.totalVolume')}</span>
+              <span className="kv-v">{String(ld.settlement.total_volume ?? 0)}</span>
+            </div>
+            <div className="kv">
+              <span className="kv-k">{t('ops.totalCommission')}</span>
+              <span className="kv-v">{String(ld.settlement.total_commission ?? 0)}</span>
+            </div>
+          </div>
+          {ld.settlement.recent && ld.settlement.recent.length > 0 && (
+            <ApiTable
+              title={t('ops.recentCleared')}
+              rows={ld.settlement.recent}
+              columns={[
+                { key: "id", label: t('col.tradeId') },
+                { key: "symbol", label: t('col.symbolPair') },
+                { key: "price", label: t('col.price') },
+                { key: "qty", label: t('col.amount') },
+                {
+                  key: "taker_side",
+                  label: t('col.takerSide'),
+                  render: (r: any) => (
+                    <span className={r.taker_side === "buy" ? "trade-side buy" : "trade-side sell"}>
+                      {r.taker_side}
+                    </span>
+                  ),
+                },
+                { key: "fee", label: t('col.fee') },
+                { key: "ts", label: t('col.time'), render: (r: any) => fmtTime(r.ts) },
+              ]}
+            />
+          )}
+        </>
+      ) : (
+        <div className="muted">{ld?.settlement?.notes || t('ops.settleUnconfigured')}</div>
+      )}
+
       <ApiTable
-        title="服务健康"
+        title={t('ops.serviceHealth')}
         rows={services.data ?? []}
         loading={services.loading}
         error={services.error}
         onReload={services.reload}
         columns={[
-          { key: "name", label: "服务" },
-          { key: "status", label: "状态" },
-          { key: "latency_ms", label: "延迟(ms)" },
-          { key: "last_check", label: "最近检查" },
+          { key: "name", label: t('col.service') },
+          { key: "status", label: t('col.status') },
+          { key: "latency_ms", label: t('col.latency') },
+          { key: "last_check", label: t('col.lastCheck') },
         ]}
       />
 
-      <h2>运营通知</h2>
+      <h2>{t('ops.notif')}</h2>
       <form className="inline-form" onSubmit={createNotif}>
-        <input placeholder="标题" value={title} onChange={(e) => setTitle(e.target.value)} />
-        <input placeholder="内容" value={body} onChange={(e) => setBody(e.target.value)} />
+        <input placeholder={t('ops.notifTitlePh')} value={title} onChange={(e) => setTitle(e.target.value)} />
+        <input placeholder={t('ops.notifBodyPh')} value={body} onChange={(e) => setBody(e.target.value)} />
         <select value={level} onChange={(e) => setLevel(e.target.value)}>
           <option value="info">info</option>
           <option value="warning">warning</option>
           <option value="critical">critical</option>
         </select>
         <button className="btn" type="submit">
-          发布通知
+          {t('ops.publishNotif')}
         </button>
       </form>
 
       <ApiTable
-        title="通知列表"
-        rows={notifs.data ?? []}
+        title={t('ops.notifList')}
+        rows={notifs.items}
         loading={notifs.loading}
         error={notifs.error}
         onReload={notifs.reload}
+        actions={
+          <Pager
+            total={notifs.total}
+            limit={notifs.limit}
+            page={notifs.page}
+            onChange={notifs.changePage}
+            onLimitChange={notifs.changeLimit}
+          />
+        }
         columns={[
           { key: "id", label: "ID" },
-          { key: "title", label: "标题" },
-          { key: "body", label: "内容" },
-          { key: "level", label: "级别" },
-          { key: "created_at", label: "发布时间" },
+          { key: "title", label: t('col.title') },
+          { key: "body", label: t('col.body') },
+          { key: "level", label: t('col.level') },
+          { key: "created_at", label: t('col.publishedAt') },
           {
             key: "op",
-            label: "操作",
+            label: t('col.actions'),
             render: (row: any) => (
               <button className="btn" onClick={() => delNotif(row.id)}>
-                删除
+                {t('common.delete')}
               </button>
             ),
           },
         ]}
       />
       <p className="muted">
-        注：账本与服务健康当前为管理后台内存只读视图，后续应接入 settlement 实时对账与各微服务健康探测。
+        {t('ops.note')}
       </p>
     </div>
   );

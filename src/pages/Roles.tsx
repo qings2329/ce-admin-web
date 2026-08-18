@@ -1,23 +1,28 @@
 import { useState } from "react";
 import { api } from "../api/client";
 import { useFetch } from "../lib/useFetch";
+import { usePaged } from "../lib/usePaged";
 import { ApiTable } from "../components/ApiTable";
+import { Pager } from "../components/Pager";
 import { useAuth, hasPerm } from "../lib/auth";
+import { useI18n } from "../i18n";
 
 export function Roles() {
+  const { t } = useI18n();
   const { perms } = useAuth();
   const canManage = hasPerm(perms, "role:manage");
 
-  const rolesFetch = useFetch(api.listRoles);
+  const rolesFetch = usePaged((p) => api.listRoles(p));
   const permsFetch = useFetch(api.listPermissions);
 
   const [name, setName] = useState("");
   const [desc, setDesc] = useState("");
   const [selected, setSelected] = useState<number | null>(null);
   const [checked, setChecked] = useState<Record<string, boolean>>({});
+  const [editTarget, setEditTarget] = useState<{ id: number; name: string; description: string } | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
 
-  const roles = (rolesFetch.data ?? []) as any[];
+  const roles = (rolesFetch.items ?? []) as any[];
   const permDict = (permsFetch.data ?? []) as any[];
 
   // 按分组聚合权限字典
@@ -38,7 +43,7 @@ export function Roles() {
     e.preventDefault();
     setMsg(null);
     if (!name) {
-      setMsg("请填写角色名");
+      setMsg(t('roles.pleaseName'));
       return;
     }
     try {
@@ -47,7 +52,7 @@ export function Roles() {
       setDesc("");
       rolesFetch.reload();
     } catch (e: any) {
-      setMsg(e?.message ?? "创建失败");
+      setMsg(e?.message ?? t('common.createFailed'));
     }
   };
 
@@ -58,70 +63,104 @@ export function Roles() {
     try {
       await api.setRolePermissions(selected, list);
       rolesFetch.reload();
-      setMsg("权限已保存");
+      setMsg(t('roles.permSaved'));
     } catch (e: any) {
-      setMsg(e?.message ?? "保存失败");
+      setMsg(e?.message ?? t('common.saveFailed'));
     }
   };
 
   const del = async (id: number) => {
-    if (!window.confirm("确认删除该角色？绑定此角色的管理员将失去角色关联。")) return;
+    if (!window.confirm(t('roles.confirmDelete'))) return;
     try {
       await api.deleteRole(id);
       if (selected === id) setSelected(null);
       rolesFetch.reload();
     } catch (e: any) {
-      setMsg(e?.message ?? "删除失败");
+      setMsg(e?.message ?? t('common.deleteFailed'));
+    }
+  };
+
+  // 编辑角色名与描述（权限分配走单独的「分配权限」）。
+  const saveRoleMeta = async () => {
+    if (!editTarget || !editTarget.name) return;
+    setMsg(null);
+    try {
+      await api.updateRole(editTarget.id, {
+        name: editTarget.name,
+        description: editTarget.description,
+      });
+      setMsg(t('roles.roleUpdated'));
+      setEditTarget(null);
+      rolesFetch.reload();
+    } catch (e: any) {
+      setMsg(e?.message ?? t('common.opFailed'));
     }
   };
 
   if (!canManage) {
     return (
       <div className="page">
-        <h1>角色与权限</h1>
-        <div className="alert-error">无访问权限（需 role:manage）</div>
+        <h1>{t('roles.title')}</h1>
+        <div className="alert-error">{t('roles.noPerm')}</div>
       </div>
     );
   }
 
   return (
     <div className="page">
-      <h1>角色与权限管理</h1>
+      <h1>{t('roles.title2')}</h1>
       {msg && <div className="alert-info">{msg}</div>}
 
       <form className="inline-form" onSubmit={create}>
-        <input placeholder="角色名" value={name} onChange={(e) => setName(e.target.value)} />
-        <input placeholder="描述" value={desc} onChange={(e) => setDesc(e.target.value)} />
+        <input placeholder={t('roles.namePh')} value={name} onChange={(e) => setName(e.target.value)} />
+        <input placeholder={t('roles.descPh')} value={desc} onChange={(e) => setDesc(e.target.value)} />
         <button className="btn" type="submit">
-          新建角色
+          {t('roles.create')}
         </button>
       </form>
 
       <ApiTable
-        title="角色列表"
+        title={t('roles.listTitle')}
         rows={roles}
         loading={rolesFetch.loading}
         error={rolesFetch.error}
         onReload={rolesFetch.reload}
+        actions={
+          <Pager
+            total={rolesFetch.total}
+            limit={rolesFetch.limit}
+            page={rolesFetch.page}
+            onChange={rolesFetch.changePage}
+            onLimitChange={rolesFetch.changeLimit}
+          />
+        }
         columns={[
           { key: "id", label: "ID" },
-          { key: "name", label: "角色名" },
-          { key: "description", label: "描述" },
+          { key: "name", label: t('col.roleName') },
+          { key: "description", label: t('col.description') },
           {
             key: "permissions",
-            label: "权限数",
+            label: t('col.permCount'),
             render: (row: any) => String((row.permissions ?? []).length),
           },
           {
             key: "op",
-            label: "操作",
+            label: t('col.actions'),
             render: (row: any) => (
               <>
+                <button
+                  className="btn"
+                  onClick={() =>
+                    setEditTarget({ id: row.id, name: row.name, description: row.description ?? "" })
+                  }
+                >
+                  {t('common.edit')}
+                </button>
                 <button className="btn" onClick={() => selectRole(row)}>
-                  分配权限
+                  {t('roles.assign')}
                 </button>
                 <button className="btn" onClick={() => del(row.id)}>
-                  删除
+                  {t('common.delete')}
                 </button>
               </>
             ),
@@ -132,9 +171,9 @@ export function Roles() {
       {selected != null && (
         <section className="panel">
           <div className="panel-head">
-            <h2>分配权限（角色 #{selected}）</h2>
+            <h2>{t('roles.assignTitle', { id: selected })}</h2>
             <button className="btn" onClick={savePerms}>
-              保存权限
+              {t('roles.savePerms')}
             </button>
           </div>
           <div className="perm-groups">
@@ -162,6 +201,40 @@ export function Roles() {
             ))}
           </div>
         </section>
+      )}
+
+      {editTarget != null && (
+        <div className="modal-overlay" onClick={() => setEditTarget(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="panel-head">
+              <h2>{t('roles.editTitle', { id: editTarget.id })}</h2>
+              <button className="btn" onClick={() => setEditTarget(null)}>
+                {t('common.close')}
+              </button>
+            </div>
+            <form
+              className="inline-form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                saveRoleMeta();
+              }}
+            >
+              <input
+                placeholder={t('roles.namePh')}
+                value={editTarget.name}
+                onChange={(e) => setEditTarget({ ...editTarget, name: e.target.value })}
+              />
+              <input
+                placeholder={t('roles.descPh')}
+                value={editTarget.description}
+                onChange={(e) => setEditTarget({ ...editTarget, description: e.target.value })}
+              />
+              <button className="btn" type="submit" disabled={!editTarget.name}>
+                {t('roles.save')}
+              </button>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );
