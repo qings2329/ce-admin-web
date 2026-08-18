@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { api } from "../api/client";
 import { useI18n, LOCALES } from "../i18n";
 import { applyTheme, THEMES, THEME_STORAGE_KEY, type ThemeId } from "../lib/theme";
@@ -22,6 +22,11 @@ export function Settings() {
   const [prefTz, setPrefTz] = useState<string>(() => getTimeZone());
   const [prefMsg, setPrefMsg] = useState<string | null>(null);
 
+  // 用户是否已手动改过某个偏好。loadPrefs 从后端拉取的是「初始值」，
+  // 若用户已先一步编辑，则后到的异步响应不得覆盖用户的选择（避免竞态丢值）。
+  // 用 ref 而非 state 持有：loadPrefs 在挂载期发起、异步返回，闭包需读到最新值。
+  const touchedRef = useRef<{ lang?: boolean; theme?: boolean; tz?: boolean }>({});
+
   const loadMe = async () => {
     try {
       setMe(await api.me());
@@ -30,12 +35,21 @@ export function Settings() {
     }
   };
   // 启动时从后端拉取偏好并应用；后端不可用时回退到初始的 localStorage 值。
+  // 注意：必须显式 applyTheme/setTimeZone，否则跨设备（无 localStorage）时仅更新 state、
+  // 页面 <html data-theme> 仍是启动默认值，主题/时区同步会失效。
+  // 仅当用户尚未手动修改该字段时才覆盖，防止异步响应覆盖用户已做的选择。
   const loadPrefs = async () => {
     try {
       const p = await api.getPreferences();
-      if (p?.language) setLocale(p.language as typeof locale);
-      if (p?.theme) setPrefTheme(p.theme as ThemeId);
-      if (p && "timezone" in p) setPrefTz(p.timezone || "");
+      if (p?.language && !touchedRef.current.lang) setLocale(p.language as typeof locale);
+      if (p?.theme && !touchedRef.current.theme) {
+        setPrefTheme(p.theme as ThemeId);
+        applyTheme(p.theme as ThemeId);
+      }
+      if (p && "timezone" in p && !touchedRef.current.tz) {
+        setPrefTz(p.timezone || "");
+        setTimeZone(p.timezone || "");
+      }
     } catch {
       /* 后端不可用时保留 localStorage（初始 state 已读取） */
     }
@@ -43,6 +57,8 @@ export function Settings() {
   useEffect(() => {
     loadMe();
     loadPrefs();
+    // 仅挂载时拉取一次；touched 变化不应重新触发。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const changePw = async (e: React.FormEvent) => {
@@ -105,7 +121,18 @@ export function Settings() {
     }
   };
 
-  const onTheme = (v: ThemeId) => setPrefTheme(v);
+  const onLang = (v: typeof locale) => {
+    touchedRef.current.lang = true;
+    setLocale(v);
+  };
+  const onTheme = (v: ThemeId) => {
+    touchedRef.current.theme = true;
+    setPrefTheme(v);
+  };
+  const onTz = (v: string) => {
+    touchedRef.current.tz = true;
+    setPrefTz(v);
+  };
 
   return (
     <div className="page">
@@ -209,7 +236,7 @@ export function Settings() {
           <select
             className="nav-select"
             value={locale}
-            onChange={(e) => setLocale(e.target.value as typeof locale)}
+            onChange={(e) => onLang(e.target.value as typeof locale)}
           >
             {LOCALES.map((lc) => (
               <option key={lc.value} value={lc.value}>
@@ -237,7 +264,7 @@ export function Settings() {
           <select
             className="nav-select"
             value={prefTz}
-            onChange={(e) => setPrefTz(e.target.value)}
+            onChange={(e) => onTz(e.target.value)}
           >
             <option value="">{t("settings.tzAuto")}</option>
             {COMMON_TZ.map((tz) => (
