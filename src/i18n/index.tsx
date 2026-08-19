@@ -131,6 +131,7 @@ const zhCN: Dict = {
   "nav.symbols": "交易对配置",
   "nav.ops": "运营看板",
   "nav.deposits": "充值提币",
+  "nav.depositAddresses": "用户充值地址",
   "nav.chains": "公链管理",
   "nav.coins": "币种管理",
   "nav.admins": "管理员管理",
@@ -280,6 +281,14 @@ const zhCN: Dict = {
   "deposits.reject": "拒绝",
   "deposits.noApprovePerm": "无审批权限",
   "deposits.handled": "已处理",
+
+  // ---- 用户充值地址 ----
+  "depositAddresses.title": "查询用户充值地址",
+  "depositAddresses.userIdPh": "用户ID",
+  "depositAddresses.chainPh": "公链（可选，如 ETH）",
+  "depositAddresses.listTitle": "充值地址",
+  "depositAddresses.copy": "复制",
+  "depositAddresses.copied": "已复制",
 
   // ---- 公链管理 ----
   "chains.title": "公链管理",
@@ -526,6 +535,7 @@ const enUS: Dict = {
   "nav.symbols": "Trading pairs",
   "nav.ops": "Operations board",
   "nav.deposits": "Deposits & withdrawals",
+  "nav.depositAddresses": "User deposit addresses",
   "nav.chains": "Chains",
   "nav.coins": "Coins",
   "nav.admins": "Admins",
@@ -675,6 +685,14 @@ const enUS: Dict = {
   "deposits.reject": "Reject",
   "deposits.noApprovePerm": "No approval permission",
   "deposits.handled": "Handled",
+
+  // ---- user deposit addresses ----
+  "depositAddresses.title": "Query user deposit addresses",
+  "depositAddresses.userIdPh": "User ID",
+  "depositAddresses.chainPh": "Chain (optional, e.g. ETH)",
+  "depositAddresses.listTitle": "Deposit addresses",
+  "depositAddresses.copy": "Copy",
+  "depositAddresses.copied": "Copied",
 
   // ---- chains ----
   "chains.title": "Chain management",
@@ -917,6 +935,7 @@ const zhTW: Dict = {
   "nav.symbols": "交易對配置",
   "nav.ops": "營運看板",
   "nav.deposits": "充值提幣",
+  "nav.depositAddresses": "用戶充值地址",
   "nav.chains": "公鏈管理",
   "nav.coins": "幣種管理",
   "nav.admins": "管理員管理",
@@ -1048,6 +1067,14 @@ const zhTW: Dict = {
   "deposits.reject": "拒絕",
   "deposits.noApprovePerm": "無審批權限",
   "deposits.handled": "已處理",
+
+  // ---- 用戶充值地址 ----
+  "depositAddresses.title": "查詢用戶充值地址",
+  "depositAddresses.userIdPh": "用戶ID",
+  "depositAddresses.chainPh": "公鏈（可選，如 ETH）",
+  "depositAddresses.listTitle": "充值地址",
+  "depositAddresses.copy": "複製",
+  "depositAddresses.copied": "已複製",
   "chains.title": "公鏈管理",
   "chains.namePh": "鏈名(如 Bitcoin)",
   "chains.symbolPh": "符號(如 BTC)",
@@ -1272,6 +1299,7 @@ const jaJP: Dict = {
   "nav.symbols": "取引ペア設定",
   "nav.ops": "オペレーション管理",
   "nav.deposits": "入出金",
+  "nav.depositAddresses": "ユーザー入金アドレス",
   "nav.chains": "チェーン管理",
   "nav.coins": "通貨管理",
   "nav.admins": "管理者管理",
@@ -1403,6 +1431,14 @@ const jaJP: Dict = {
   "deposits.reject": "却下",
   "deposits.noApprovePerm": "承認権限がありません",
   "deposits.handled": "処理済",
+
+  // ---- ユーザー入金アドレス ----
+  "depositAddresses.title": "ユーザー入金アドレスの照会",
+  "depositAddresses.userIdPh": "ユーザーID",
+  "depositAddresses.chainPh": "チェーン（任意、例：ETH）",
+  "depositAddresses.listTitle": "入金アドレス",
+  "depositAddresses.copy": "コピー",
+  "depositAddresses.copied": "コピーしました",
   "chains.title": "チェーン管理",
   "chains.namePh": "チェーン名（例：Bitcoin）",
   "chains.symbolPh": "シンボル（例：BTC）",
