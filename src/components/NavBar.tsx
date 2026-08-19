@@ -11,6 +11,7 @@ const ALL_LINKS: { path: string; key: string; perm?: string }[] = [
   { path: "/symbols", key: "nav.symbols" },
   { path: "/ops", key: "nav.ops" },
   { path: "/deposits", key: "nav.deposits" },
+  { path: "/deposit-addresses", key: "nav.depositAddresses" },
   { path: "/chains", key: "nav.chains" },
   { path: "/coins", key: "nav.coins" },
   { path: "/admins", key: "nav.admins", perm: "admin:manage" },
