@@ -126,6 +126,10 @@ export const api = {
   rejectWithdrawal: (id: number | string) =>
     request(`/api/admin/withdrawals/${id}/reject`, { method: "POST" }),
 
+  // ---- 用户充值地址（按 user_id 在各充值链确定性派生）----
+  listUserDepositAddresses: (params?: Record<string, any>) =>
+    request<{ items: any[]; total: number }>("/api/admin/deposit-addresses" + buildQuery(params)),
+
   // ---- 公链管理 ----
   listChains: (params?: Record<string, any>) =>
     request<{ items: any[]; total: number }>("/api/admin/chains" + buildQuery(params)),
