@@ -20,6 +20,7 @@ import { ApiKeys } from "./pages/ApiKeys";
 import { UserDepositAddresses } from "./pages/UserDepositAddresses";
 import { LendingAdmin } from "./pages/LendingAdmin";
 import { BotAdmin } from "./pages/BotAdmin";
+import { ReferralAdmin } from "./pages/ReferralAdmin";
 
 function useHash() {
   const [hash, setHash] = useState(location.hash || "#/dashboard");
@@ -50,6 +51,7 @@ const PAGES: Record<string, () => JSX.Element> = {
   "/deposit-addresses": UserDepositAddresses,
   "/lending": LendingAdmin,
   "/bot": BotAdmin,
+  "/referral": ReferralAdmin,
 };
 
 function Router() {

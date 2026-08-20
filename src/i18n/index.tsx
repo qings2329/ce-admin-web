@@ -424,6 +424,7 @@ const zhCN: Dict = {
   // ---- 借贷管理 ----
   "nav.lending": "借贷管理",
   "nav.bot": "交易机器人",
+  "nav.referral": "邀请佣金",
   "lending.title": "借贷管理",
   "lending.poolsTitle": "借贷池",
   "lending.lendsTitle": "存款订单",
@@ -482,6 +483,17 @@ const zhCN: Dict = {
   "bot.stStopped": "已停止",
   "bot.stPending": "待启动",
   "bot.noStrategies": "暂无策略",
+  "referral.adminTitle": "邀请佣金管理",
+  "referral.adminDesc": "查看所有用户间的邀请佣金记录",
+  "referral.adminReferrer": "邀请人",
+  "referral.adminTaker": "被邀请人",
+  "referral.asset": "币种",
+  "referral.amount": "佣金金额",
+  "referral.rate": "佣金比例",
+  "referral.status": "状态",
+  "referral.time": "时间",
+  "referral.confirmed": "已到账",
+  "referral.pending": "待结算",
 };
 
 const enUS: Dict = {
@@ -948,6 +960,18 @@ const enUS: Dict = {
   "bot.stStopped": "Stopped",
   "bot.stPending": "Pending",
   "bot.noStrategies": "No strategies",
+  "nav.referral": "Referral",
+  "referral.adminTitle": "Referral Commission Management",
+  "referral.adminDesc": "View all referral commission records between users",
+  "referral.adminReferrer": "Referrer",
+  "referral.adminTaker": "Taker",
+  "referral.asset": "Asset",
+  "referral.amount": "Commission",
+  "referral.rate": "Rate",
+  "referral.status": "Status",
+  "referral.time": "Time",
+  "referral.confirmed": "Confirmed",
+  "referral.pending": "Pending",
 };
 
 // zh-TW / ja-JP 由翻译子代理填充；先以 zh-CN 占位保证可编译。
@@ -1318,6 +1342,7 @@ const zhTW: Dict = {
   // ---- 借貸管理 ----
   "nav.lending": "借貸管理",
   "nav.bot": "交易機器人",
+  "nav.referral": "邀請佣金",
   "lending.title": "借貸管理",
   "lending.poolsTitle": "借貸池",
   "lending.lendsTitle": "存款訂單",
@@ -1376,6 +1401,17 @@ const zhTW: Dict = {
   "bot.stStopped": "已停止",
   "bot.stPending": "待啟動",
   "bot.noStrategies": "暫無策略",
+  "referral.adminTitle": "邀請佣金管理",
+  "referral.adminDesc": "查看所有用戶間的邀請佣金記錄",
+  "referral.adminReferrer": "邀請人",
+  "referral.adminTaker": "被邀請人",
+  "referral.asset": "幣種",
+  "referral.amount": "佣金金額",
+  "referral.rate": "佣金比例",
+  "referral.status": "狀態",
+  "referral.time": "時間",
+  "referral.confirmed": "已到帳",
+  "referral.pending": "待結算",
 };
 const jaJP: Dict = {
   "common.loading": "読み込み中…",
@@ -1744,6 +1780,7 @@ const jaJP: Dict = {
   // ---- レンディング管理 ----
   "nav.lending": "レンディング管理",
   "nav.bot": "取引ボット",
+  "nav.referral": "招待報酬",
   "lending.title": "レンディング管理",
   "lending.poolsTitle": "レンディングプール",
   "lending.lendsTitle": "預入注文",
@@ -1802,6 +1839,17 @@ const jaJP: Dict = {
   "bot.stStopped": "停止",
   "bot.stPending": "待機中",
   "bot.noStrategies": "戦略がありません",
+  "referral.adminTitle": "招待報酬管理",
+  "referral.adminDesc": "全ユーザー間の招待報酬記録を表示",
+  "referral.adminReferrer": "招待者",
+  "referral.adminTaker": "被招待者",
+  "referral.asset": "資産",
+  "referral.amount": "報酬額",
+  "referral.rate": "報酬率",
+  "referral.status": "ステータス",
+  "referral.time": "日時",
+  "referral.confirmed": "確定",
+  "referral.pending": "保留中",
 };
 
 const DICTS: Record<Locale, Dict> = {
