@@ -244,4 +244,23 @@ export const api = {
     request<{ revoked: boolean; id: number }>("/api/admin/apikeys/" + id, {
       method: "DELETE",
     }),
+
+  // ---- 借贷管理（代理 lending 服务） ----
+  listLendingPools: () =>
+    request<{ pools: any[] }>("/api/admin/lending/pools"),
+  createLendingPool: (asset: string, collateralReq: number) =>
+    request<{ pool: any }>("/api/admin/lending/pools", {
+      method: "POST",
+      body: JSON.stringify({ asset, collateral_req: collateralReq }),
+    }),
+  listLendingLends: () =>
+    request<{ lends: any[] }>("/api/admin/lending/lends"),
+  listLendingBorrows: () =>
+    request<{ borrows: any[] }>("/api/admin/lending/borrows"),
+
+  // ---- 交易机器人管理（代理 bot 服务） ----
+  listBotStrategies: () =>
+    request<{ strategies: any[] }>("/api/admin/bot/strategies"),
+  botTick: (id: number | string) =>
+    request<any>("/api/admin/bot/strategies/" + id + "/tick", { method: "POST", body: "{}" }),
 };

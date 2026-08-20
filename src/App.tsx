@@ -18,6 +18,8 @@ import { Dashboard } from "./pages/Dashboard";
 import { Audit } from "./pages/Audit";
 import { ApiKeys } from "./pages/ApiKeys";
 import { UserDepositAddresses } from "./pages/UserDepositAddresses";
+import { LendingAdmin } from "./pages/LendingAdmin";
+import { BotAdmin } from "./pages/BotAdmin";
 
 function useHash() {
   const [hash, setHash] = useState(location.hash || "#/dashboard");
@@ -46,6 +48,8 @@ const PAGES: Record<string, () => JSX.Element> = {
   "/audit": Audit,
   "/apikeys": ApiKeys,
   "/deposit-addresses": UserDepositAddresses,
+  "/lending": LendingAdmin,
+  "/bot": BotAdmin,
 };
 
 function Router() {
