@@ -13,6 +13,7 @@ import { Admins } from "./pages/Admins";
 import { Roles } from "./pages/Roles";
 import { Settings } from "./pages/Settings";
 import { Announcements } from "./pages/Announcements";
+import { Notifications } from "./pages/Notifications";
 import { Orders } from "./pages/Orders";
 import { Dashboard } from "./pages/Dashboard";
 import { Audit } from "./pages/Audit";
@@ -45,6 +46,7 @@ const PAGES: Record<string, () => JSX.Element> = {
   "/roles": Roles,
   "/settings": Settings,
   "/announcements": Announcements,
+  "/notifications": Notifications,
   "/orders": Orders,
   "/audit": Audit,
   "/apikeys": ApiKeys,

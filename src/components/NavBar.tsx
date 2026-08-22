@@ -17,6 +17,7 @@ const ALL_LINKS: { path: string; key: string; perm?: string }[] = [
   { path: "/admins", key: "nav.admins", perm: "admin:manage" },
   { path: "/roles", key: "nav.roles", perm: "role:manage" },
   { path: "/announcements", key: "nav.announcements" },
+  { path: "/notifications", key: "nav.notifications" },
   { path: "/orders", key: "nav.orders", perm: "trade:read" },
   { path: "/audit", key: "nav.audit", perm: "audit:read" },
   { path: "/apikeys", key: "nav.apikeys", perm: "apikey:read" },
