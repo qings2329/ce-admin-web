@@ -42,6 +42,20 @@ export class ApiError extends Error {
   }
 }
 
+// 邀请佣金记录（GET /api/admin/referral/commissions）。
+export interface Commission {
+  id: number;
+  referrer_id: number;
+  taker_id: number;
+  asset: string;
+  amount: number;
+  rate: number;
+  status: number;
+  biz_ref: string;
+  created_at: string;
+  updated_at: string;
+}
+
 // buildQuery 把过滤参数拼成查询串，跳过空值（undefined/null/空字符串）。
 function buildQuery(params?: Record<string, any>): string {
   if (!params) return "";
@@ -263,4 +277,8 @@ export const api = {
     request<{ strategies: any[] }>("/api/admin/bot/strategies"),
   botTick: (id: number | string) =>
     request<any>("/api/admin/bot/strategies/" + id + "/tick", { method: "POST", body: "{}" }),
+
+  // ---- 邀请佣金管理 ----
+  getReferralCommissions: (params?: { limit?: number; offset?: number }) =>
+    request<{ commissions: Commission[]; total: number }>("/api/admin/referral/commissions" + buildQuery(params)),
 };

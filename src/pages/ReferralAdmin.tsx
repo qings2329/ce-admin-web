@@ -1,19 +1,6 @@
 import { useEffect, useState } from "react";
-import { api } from "../api/client";
+import { api, type Commission } from "../api/client";
 import { useI18n } from "../i18n";
-
-interface Commission {
-  id: number;
-  referrer_id: number;
-  taker_id: number;
-  asset: string;
-  amount: number;
-  rate: number;
-  status: number;
-  biz_ref: string;
-  created_at: string;
-  updated_at: string;
-}
 
 export function ReferralAdmin() {
   const { t } = useI18n();
@@ -24,9 +11,7 @@ export function ReferralAdmin() {
 
   const load = async (offset: number) => {
     try {
-      const d = await api.get<{ commissions: Commission[]; total: number }>(
-        `/api/admin/referral/commissions?limit=${limit}&offset=${offset}`
-      );
+      const d = await api.getReferralCommissions({ limit, offset });
       setCommissions(d.commissions ?? []);
       setTotal(d.total ?? 0);
     } catch {
