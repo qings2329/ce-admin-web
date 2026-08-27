@@ -39,7 +39,7 @@ export function Dashboard() {
   const services = useFetch(api.getServices);
 
   const userCount = (users.data?.items ?? []).length;
-  const wdRows = (withdrawals.data ?? []) as any[];
+  const wdRows = (withdrawals.data?.withdrawals ?? []) as any[];
   const pendingWd = wdRows.filter((w) => w.status === "pending");
   const annCount = (announcements.data?.announcements ?? []).length;
   const ld = ledger.data as any;

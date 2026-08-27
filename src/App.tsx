@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { AuthProvider, useAuth } from "./lib/auth";
 import { NavBar } from "./components/NavBar";
 import { Login } from "./pages/Login";
@@ -72,7 +73,9 @@ function Router() {
     <div className="flex min-h-screen">
       <NavBar />
       <main className="min-w-0 flex-1 p-4">
-        <Page />
+        <ErrorBoundary>
+          <Page />
+        </ErrorBoundary>
       </main>
     </div>
   );
