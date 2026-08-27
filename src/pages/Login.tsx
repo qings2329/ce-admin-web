@@ -7,7 +7,7 @@ export function Login() {
   const { login } = useAuth();
   const { t } = useI18n();
   const [username, setUsername] = useState("admin");
-  const [password, setPassword] = useState("admin123");
+  const [password, setPassword] = useState("admin!@#%");
   const [totp, setTotp] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);

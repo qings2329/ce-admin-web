@@ -153,7 +153,7 @@ const zhCN: Dict = {
   "login.submit": "登录",
   "login.submitting": "登录中…",
   "login.failed": "登录失败",
-  "login.demoHint": "默认凭据 admin / admin123（原型）",
+  "login.demoHint": "默认凭据 admin / admin!@#%（原型）",
 
   // ---- 安全设置（Settings） ----
   "settings.title": "安全设置",
@@ -655,7 +655,7 @@ const enUS: Dict = {
   "login.submit": "Log in",
   "login.submitting": "Logging in…",
   "login.failed": "Login failed",
-  "login.demoHint": "Default credentials admin / admin123 (prototype)",
+  "login.demoHint": "Default credentials admin / admin!@#% (prototype)",
 
   // ---- security settings ----
   "settings.title": "Security settings",
@@ -1127,7 +1127,7 @@ const zhTW: Dict = {
   "login.submit": "登入",
   "login.submitting": "登入中…",
   "login.failed": "登入失敗",
-  "login.demoHint": "預設憑證 admin / admin123（原型）",
+  "login.demoHint": "預設憑證 admin / admin!@#%（原型）",
   "settings.title": "安全設定",
   "settings.currentAccount": "目前帳戶",
   "settings.mfaStatus": "MFA 狀態",
@@ -1565,7 +1565,7 @@ const jaJP: Dict = {
   "login.submit": "ログイン",
   "login.submitting": "ログイン中…",
   "login.failed": "ログインに失敗しました",
-  "login.demoHint": "既定の認証情報 admin / admin123（プロトタイプ）",
+  "login.demoHint": "既定の認証情報 admin / admin!@#%（プロトタイプ）",
   "settings.title": "セキュリティ設定",
   "settings.currentAccount": "現在のアカウント",
   "settings.mfaStatus": "MFA ステータス",
