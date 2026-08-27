@@ -1892,7 +1892,10 @@ function normalize(saved: string | null): Locale {
 }
 
 function lookup(locale: Locale, key: string): string | undefined {
-  return DICTS[locale][key] ?? DICTS["zh-CN"][key];
+  // 未知 locale（如后端偏好返回非法语言值）兜底到 zh-CN，避免 DICTS[locale] 为
+  // undefined 导致每个 t() 调用抛错、整页崩溃（兑现「保证不白屏」承诺）。
+  const dict = DICTS[locale] ?? DICTS["zh-CN"];
+  return dict[key] ?? DICTS["zh-CN"][key];
 }
 
 export function translate(
