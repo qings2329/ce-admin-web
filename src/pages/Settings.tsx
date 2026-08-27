@@ -3,6 +3,12 @@ import { api } from "../api/client";
 import { useI18n, LOCALES } from "../i18n";
 import { applyTheme, THEMES, THEME_STORAGE_KEY, type ThemeId } from "../lib/theme";
 import { getTimeZone, setTimeZone, COMMON_TZ } from "../lib/timezone";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Select } from "../components/ui/select";
+import { Card, CardContent } from "../components/ui/card";
+import { Alert } from "../components/ui/alert";
+import { StatusBadge } from "../components/ui/status-badge";
 
 export function Settings() {
   const { t, locale, setLocale } = useI18n();
@@ -135,106 +141,117 @@ export function Settings() {
   };
 
   return (
-    <div className="page">
-      <h1>{t("settings.title")}</h1>
-      {(pwMsg || mfaMsg) && <div className="alert-info">{pwMsg || mfaMsg}</div>}
+    <div className="space-y-4">
+      <h1 className="mb-3 text-lg font-semibold">{t("settings.title")}</h1>
+      {(pwMsg || mfaMsg) && <Alert variant="info">{pwMsg || mfaMsg}</Alert>}
 
       {me && (
-        <div className="kv-grid">
-          <div className="kv">
-            <span className="kv-k">{t("settings.currentAccount")}</span>
-            <span className="kv-v">{me.username}</span>
-          </div>
-          <div className="kv">
-            <span className="kv-k">{t("col.role")}</span>
-            <span className="kv-v">{me.role_name}</span>
-          </div>
-          <div className="kv">
-            <span className="kv-k">{t("settings.mfaStatus")}</span>
-            <span className="kv-v">{me.totp_enabled ? t("common.enabled") : t("common.disabled")}</span>
-          </div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          <Card className="flex flex-col gap-1.5 p-3">
+            <span className="text-xs text-muted-foreground">{t("settings.currentAccount")}</span>
+            <span className="text-base font-semibold">{me.username}</span>
+          </Card>
+          <Card className="flex flex-col gap-1.5 p-3">
+            <span className="text-xs text-muted-foreground">{t("col.role")}</span>
+            <span className="text-base font-semibold">{me.role_name}</span>
+          </Card>
+          <Card className="flex flex-col gap-1.5 p-3">
+            <span className="text-xs text-muted-foreground">{t("settings.mfaStatus")}</span>
+            <StatusBadge tone={me.totp_enabled ? "success" : "neutral"}>
+              {me.totp_enabled ? t("common.enabled") : t("common.disabled")}
+            </StatusBadge>
+          </Card>
         </div>
       )}
 
-      <h2>{t("settings.changePwd")}</h2>
-      <form className="inline-form" onSubmit={changePw}>
-        <input
+      <h2 className="mb-3 mt-4 text-base font-semibold">{t("settings.changePwd")}</h2>
+      <form className="mb-3 flex flex-wrap items-center gap-2" onSubmit={changePw}>
+        <Input
           placeholder={t("settings.oldPwd")}
           type="password"
           value={oldPw}
           onChange={(e) => setOldPw(e.target.value)}
         />
-        <input
+        <Input
           placeholder={t("settings.newPwd")}
           type="password"
           value={newPw}
           onChange={(e) => setNewPw(e.target.value)}
         />
-        <button className="btn" type="submit">
+        <Button type="submit">
           {t("settings.changePwd")}
-        </button>
+        </Button>
       </form>
 
-      <h2>{t("settings.mfa")}</h2>
+      <h2 className="mb-3 mt-4 text-base font-semibold">{t("settings.mfa")}</h2>
       {me?.totp_enabled ? (
-        <div className="panel">
-          <p>{t("settings.mfaEnabledNote")}</p>
-          <form
-            className="inline-form"
-            onSubmit={(e) => {
-              e.preventDefault();
-              disable();
-            }}
-          >
-            <input
-              placeholder={t("settings.curCodePh")}
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-            />
-            <button className="btn" type="submit">
-              {t("settings.disableMfa")}
-            </button>
-          </form>
-        </div>
+        <Card className="mb-3">
+          <CardContent className="space-y-3">
+            <p>{t("settings.mfaEnabledNote")}</p>
+            <form
+              className="flex flex-wrap items-center gap-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                disable();
+              }}
+            >
+              <Input
+                placeholder={t("settings.curCodePh")}
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+              />
+              <Button type="submit">
+                {t("settings.disableMfa")}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
       ) : setup ? (
-        <div className="panel">
-          <p>{t("settings.step1")}</p>
-          <pre className="secret-box">{setup.secret}</pre>
-          <p>{t("settings.step2otp")}</p>
-          <pre className="secret-box">{setup.otpauth_uri}</pre>
-          <p>{t("settings.step2")}</p>
-          <form
-            className="inline-form"
-            onSubmit={(e) => {
-              e.preventDefault();
-              enable();
-            }}
-          >
-            <input
-              placeholder={t("settings.codePh")}
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-            />
-            <button className="btn" type="submit">
-              {t("settings.enableMfa")}
-            </button>
-          </form>
-        </div>
+        <Card className="mb-3">
+          <CardContent className="space-y-3">
+            <p>{t("settings.step1")}</p>
+            <pre className="rounded-md border border-border bg-background p-3 font-mono text-xs whitespace-pre-wrap break-all">
+              {setup.secret}
+            </pre>
+            <p>{t("settings.step2otp")}</p>
+            <pre className="rounded-md border border-border bg-background p-3 font-mono text-xs whitespace-pre-wrap break-all">
+              {setup.otpauth_uri}
+            </pre>
+            <p>{t("settings.step2")}</p>
+            <form
+              className="flex flex-wrap items-center gap-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                enable();
+              }}
+            >
+              <Input
+                placeholder={t("settings.codePh")}
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+              />
+              <Button type="submit">
+                {t("settings.enableMfa")}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
       ) : (
-        <div className="panel">
-          <p>{t("settings.notEnabled")}</p>
-          <button className="btn" onClick={startSetup}>
-            {t("settings.bind")}
-          </button>
-        </div>
+        <Card className="mb-3">
+          <CardContent className="space-y-3">
+            <p>{t("settings.notEnabled")}</p>
+            <Button onClick={startSetup}>
+              {t("settings.bind")}
+            </Button>
+          </CardContent>
+        </Card>
       )}
 
-      <h2>{t("settings.preferences")}</h2>
-      <div className="kv-grid">
-        <div className="kv">
-          <span className="kv-k">{t("settings.language")}</span>
-          <select
-            className="nav-select"
+      <h2 className="mb-3 mt-4 text-base font-semibold">{t("settings.preferences")}</h2>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        <Card className="flex flex-col gap-1.5 p-3">
+          <span className="text-xs text-muted-foreground">{t("settings.language")}</span>
+          <Select
             value={locale}
             onChange={(e) => onLang(e.target.value as typeof locale)}
           >
@@ -243,12 +260,11 @@ export function Settings() {
                 {lc.label}
               </option>
             ))}
-          </select>
-        </div>
-        <div className="kv">
-          <span className="kv-k">{t("settings.theme")}</span>
-          <select
-            className="nav-select"
+          </Select>
+        </Card>
+        <Card className="flex flex-col gap-1.5 p-3">
+          <span className="text-xs text-muted-foreground">{t("settings.theme")}</span>
+          <Select
             value={prefTheme}
             onChange={(e) => onTheme(e.target.value as ThemeId)}
           >
@@ -257,12 +273,11 @@ export function Settings() {
                 {t(th.key)}
               </option>
             ))}
-          </select>
-        </div>
-        <div className="kv">
-          <span className="kv-k">{t("settings.timezone")}</span>
-          <select
-            className="nav-select"
+          </Select>
+        </Card>
+        <Card className="flex flex-col gap-1.5 p-3">
+          <span className="text-xs text-muted-foreground">{t("settings.timezone")}</span>
+          <Select
             value={prefTz}
             onChange={(e) => onTz(e.target.value)}
           >
@@ -270,13 +285,13 @@ export function Settings() {
             {COMMON_TZ.map((tz) => (
               <option key={tz} value={tz}>{tz}</option>
             ))}
-          </select>
-        </div>
+          </Select>
+        </Card>
       </div>
-      <button className="btn" onClick={savePrefs}>
+      <Button onClick={savePrefs}>
         {t("settings.savePrefs")}
-      </button>
-      {prefMsg && <div className="alert-info">{prefMsg}</div>}
+      </Button>
+      {prefMsg && <Alert variant="info">{prefMsg}</Alert>}
     </div>
   );
 }

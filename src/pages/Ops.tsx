@@ -6,10 +6,25 @@ import { useFetch } from "../lib/useFetch";
 import { usePaged } from "../lib/usePaged";
 import { ApiTable } from "../components/ApiTable";
 import { Pager } from "../components/Pager";
+import { cn } from "../lib/utils";
+import { Input } from "../components/ui/input";
+import { Select } from "../components/ui/select";
+import { Button } from "../components/ui/button";
+import { Alert } from "../components/ui/alert";
+import { StatusBadge } from "../components/ui/status-badge";
 
 // 结算/成交时间一般为 Unix 毫秒；统一按时区格式化展示。
 function fmtTime(ts?: number): string {
   return formatDateTime(ts);
+}
+
+function Kv({ k, v, num }: { k: string; v: string; num?: boolean }) {
+  return (
+    <div className="rounded-lg border border-border bg-card p-3 flex flex-col gap-1.5">
+      <span className="text-xs text-muted-foreground">{k}</span>
+      <span className={cn("text-base font-semibold", num && "num")}>{v}</span>
+    </div>
+  );
 }
 
 export function Ops() {
@@ -48,46 +63,25 @@ export function Ops() {
   const ld = ledger.data as any;
 
   return (
-    <div className="page">
-      <h1>{t('ops.title')}</h1>
-      {msg && <div className="alert-info">{msg}</div>}
+    <div className="space-y-4">
+      <h1 className="text-lg font-semibold mb-3">{t('ops.title')}</h1>
+      {msg && <Alert variant="info">{msg}</Alert>}
 
-      <h2>{t('ops.ledger')}</h2>
-      <div className="kv-grid">
-        <div className="kv">
-          <span className="kv-k">{t('ops.totalAssets')}</span>
-          <span className="kv-v">{ld?.total_assets ?? "-"}</span>
-        </div>
-        <div className="kv">
-          <span className="kv-k">{t('ops.settleBalance')}</span>
-          <span className="kv-v">{ld?.settlement_balance ?? "-"}</span>
-        </div>
-        <div className="kv">
-          <span className="kv-k">{t('ops.reconciled')}</span>
-          <span className="kv-v">{ld?.reconciled ? t('common.yes') : t('common.no')}</span>
-        </div>
-        <div className="kv">
-          <span className="kv-k">{t('ops.diff')}</span>
-          <span className="kv-v">{ld?.discrepancy ?? "-"}</span>
-        </div>
+      <h2 className="mb-3 text-base font-semibold">{t('ops.ledger')}</h2>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+        <Kv k={t('ops.totalAssets')} v={ld?.total_assets ?? "-"} num />
+        <Kv k={t('ops.settleBalance')} v={ld?.settlement_balance ?? "-"} num />
+        <Kv k={t('ops.reconciled')} v={ld?.reconciled ? t('common.yes') : t('common.no')} />
+        <Kv k={t('ops.diff')} v={ld?.discrepancy ?? "-"} num />
       </div>
 
-      <h2>{t('ops.settleRealTime')}</h2>
+      <h2 className="mb-3 text-base font-semibold">{t('ops.settleRealTime')}</h2>
       {ld?.settlement?.enabled ? (
         <>
-          <div className="kv-grid">
-            <div className="kv">
-              <span className="kv-k">{t('ops.totalTrades')}</span>
-              <span className="kv-v">{String(ld.settlement.total_trades ?? 0)}</span>
-            </div>
-            <div className="kv">
-              <span className="kv-k">{t('ops.totalVolume')}</span>
-              <span className="kv-v">{String(ld.settlement.total_volume ?? 0)}</span>
-            </div>
-            <div className="kv">
-              <span className="kv-k">{t('ops.totalCommission')}</span>
-              <span className="kv-v">{String(ld.settlement.total_commission ?? 0)}</span>
-            </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            <Kv k={t('ops.totalTrades')} v={String(ld.settlement.total_trades ?? 0)} num />
+            <Kv k={t('ops.totalVolume')} v={String(ld.settlement.total_volume ?? 0)} num />
+            <Kv k={t('ops.totalCommission')} v={String(ld.settlement.total_commission ?? 0)} num />
           </div>
           {ld.settlement.recent && ld.settlement.recent.length > 0 && (
             <ApiTable
@@ -102,9 +96,9 @@ export function Ops() {
                   key: "taker_side",
                   label: t('col.takerSide'),
                   render: (r: any) => (
-                    <span className={r.taker_side === "buy" ? "trade-side buy" : "trade-side sell"}>
+                    <StatusBadge tone={r.taker_side === "buy" ? "success" : "danger"}>
                       {r.taker_side}
-                    </span>
+                    </StatusBadge>
                   ),
                 },
                 { key: "fee", label: t('col.fee') },
@@ -114,7 +108,7 @@ export function Ops() {
           )}
         </>
       ) : (
-        <div className="muted">{ld?.settlement?.notes || t('ops.settleUnconfigured')}</div>
+        <p className="text-muted-foreground text-xs">{ld?.settlement?.notes || t('ops.settleUnconfigured')}</p>
       )}
 
       <ApiTable
@@ -131,18 +125,16 @@ export function Ops() {
         ]}
       />
 
-      <h2>{t('ops.notif')}</h2>
-      <form className="inline-form" onSubmit={createNotif}>
-        <input placeholder={t('ops.notifTitlePh')} value={title} onChange={(e) => setTitle(e.target.value)} />
-        <input placeholder={t('ops.notifBodyPh')} value={body} onChange={(e) => setBody(e.target.value)} />
-        <select value={level} onChange={(e) => setLevel(e.target.value)}>
+      <h2 className="mb-3 text-base font-semibold">{t('ops.notif')}</h2>
+      <form className="flex flex-wrap items-center gap-2 mb-3" onSubmit={createNotif}>
+        <Input placeholder={t('ops.notifTitlePh')} value={title} onChange={(e) => setTitle(e.target.value)} />
+        <Input placeholder={t('ops.notifBodyPh')} value={body} onChange={(e) => setBody(e.target.value)} />
+        <Select value={level} onChange={(e) => setLevel(e.target.value)}>
           <option value="info">info</option>
           <option value="warning">warning</option>
           <option value="critical">critical</option>
-        </select>
-        <button className="btn" type="submit">
-          {t('ops.publishNotif')}
-        </button>
+        </Select>
+        <Button type="submit">{t('ops.publishNotif')}</Button>
       </form>
 
       <ApiTable
@@ -170,14 +162,14 @@ export function Ops() {
             key: "op",
             label: t('col.actions'),
             render: (row: any) => (
-              <button className="btn" onClick={() => delNotif(row.id)}>
+              <Button variant="outline" size="sm" onClick={() => delNotif(row.id)}>
                 {t('common.delete')}
-              </button>
+              </Button>
             ),
           },
         ]}
       />
-      <p className="muted">
+      <p className="text-muted-foreground text-xs">
         {t('ops.note')}
       </p>
     </div>

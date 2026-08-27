@@ -1,5 +1,5 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
-import { api, tokenStore } from "../api/client";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { api, onSessionExpired, tokenStore } from "../api/client";
 
 interface AuthCtxValue {
   authed: boolean;
@@ -45,6 +45,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuthed(false);
     location.hash = "/login";
   };
+
+  // 注册会话过期回调：token 失效时由请求层统一触发登出跳转。
+  useEffect(() => {
+    onSessionExpired(() => {
+      sessionStorage.setItem("auth_expired", "1");
+      logout();
+    });
+  }, []);
 
   return (
     <AuthCtx.Provider value={{ authed, perms, login, logout, refreshMe }}>

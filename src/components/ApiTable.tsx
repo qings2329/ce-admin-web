@@ -1,10 +1,22 @@
 import { type ReactNode } from "react";
 import { useI18n } from "../i18n";
+import { Card, CardHeader, CardTitle } from "./ui/card";
+import { Alert } from "./ui/alert";
+import { Button } from "./ui/button";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "./ui/table";
 
 interface Column {
   key: string;
   label?: string;
   render?: (row: any) => ReactNode;
+  mono?: boolean; // 该列数值/标识符使用等宽字体对齐
 }
 
 interface ApiTableProps {
@@ -38,46 +50,60 @@ export function ApiTable({
       : []);
 
   return (
-    <section className="panel">
-      <div className="panel-head">
-        <h2>{title}</h2>
-        <div className="panel-actions">
+    <Card>
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+        <div className="flex items-center gap-2">
           {actions}
           {onReload && (
-            <button className="btn" onClick={onReload}>
+            <Button variant="outline" size="sm" onClick={onReload}>
               {t('common.refresh')}
-            </button>
+            </Button>
           )}
         </div>
-      </div>
-      {error && <div className="alert-error">{error}</div>}
-      {loading && <div className="muted">{t('common.loading')}</div>}
-      {!loading && !error && rows.length === 0 && <div className="muted">{resolvedEmptyText}</div>}
-      {!loading && !error && rows.length > 0 && (
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                {cols.map((c) => (
-                  <th key={c.key}>{c.label ?? c.key}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row, i) => (
-                <tr key={row.id ?? row.symbol ?? row.name ?? i}>
-                  {cols.map((c) => (
-                    <td key={c.key}>
-                      {c.render ? c.render(row) : formatVal(row[c.key])}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      </CardHeader>
+      {error && <Alert variant="error">{error}</Alert>}
+      {loading && (
+        <div className="px-3 py-2 text-xs text-muted-foreground">
+          {t('common.loading')}
         </div>
       )}
-    </section>
+      {!loading && !error && rows.length === 0 && (
+        <div className="px-3 py-2 text-xs text-muted-foreground">
+          {resolvedEmptyText}
+        </div>
+      )}
+      {!loading && !error && rows.length > 0 && (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              {cols.map((c) => (
+                <TableHead key={c.key}>{c.label ?? c.key}</TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((row, i) => (
+              <TableRow key={row.id ?? row.symbol ?? row.name ?? i}>
+                {cols.map((c) => (
+                  <TableCell key={c.key}>
+                    {c.mono ? (
+                      <span className="num">
+                        {c.render ? c.render(row) : formatVal(row[c.key])}
+                      </span>
+                    ) : c.render ? (
+                      c.render(row)
+                    ) : (
+                      formatVal(row[c.key])
+                    )}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+    </Card>
   );
 }
 

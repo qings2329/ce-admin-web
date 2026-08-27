@@ -6,6 +6,11 @@ import { ApiTable } from "../components/ApiTable";
 import { Pager } from "../components/Pager";
 import { useAuth, hasPerm } from "../lib/auth";
 import { useI18n } from "../i18n";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Select } from "../components/ui/select";
+import { StatusBadge } from "../components/ui/status-badge";
+import { Alert } from "../components/ui/alert";
 
 export function Admins() {
   const { t } = useI18n();
@@ -85,38 +90,36 @@ export function Admins() {
 
   if (!canManage) {
     return (
-      <div className="page">
-        <h1>{t('admins.title')}</h1>
-        <div className="alert-error">{t('admins.noPerm')}</div>
+      <div className="space-y-3">
+        <h1 className="text-xl font-semibold">{t('admins.title')}</h1>
+        <Alert variant="error">{t('admins.noPerm')}</Alert>
       </div>
     );
   }
 
   return (
-    <div className="page">
-      <h1>{t('admins.title')}</h1>
-      {msg && <div className="alert-info">{msg}</div>}
+    <div className="space-y-3">
+      <h1 className="text-xl font-semibold">{t('admins.title')}</h1>
+      {msg && <Alert variant="info">{msg}</Alert>}
 
-      <form className="inline-form" onSubmit={create}>
-        <input placeholder={t('admins.usernamePh')} value={username} onChange={(e) => setUsername(e.target.value)} />
-        <input
+      <form className="flex flex-wrap items-center gap-2 mb-3" onSubmit={create}>
+        <Input placeholder={t('admins.usernamePh')} value={username} onChange={(e) => setUsername(e.target.value)} />
+        <Input
           placeholder={t('admins.initPwdPh')}
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
-        <select value={roleId} onChange={(e) => setRoleId(e.target.value)}>
+        <Select value={roleId} onChange={(e) => setRoleId(e.target.value)}>
           <option value="">{t('admins.selectRole')}</option>
           {roles.map((r) => (
             <option key={r.id} value={r.id}>
               {r.name}
             </option>
           ))}
-        </select>
-        <button className="btn" type="submit">
-          {t('admins.create')}
-        </button>
-        <span className="muted">{t('admins.pendingHint')}</span>
+        </Select>
+        <Button type="submit">{t('admins.create')}</Button>
+        <span className="text-xs text-muted-foreground">{t('admins.pendingHint')}</span>
       </form>
 
       <ApiTable
@@ -127,56 +130,70 @@ export function Admins() {
         onReload={reload}
         actions={<Pager total={total} limit={limit} page={page} onChange={changePage} onLimitChange={changeLimit} />}
         columns={[
-          { key: "id", label: "ID" },
+          { key: "id", label: "ID", render: (row: any) => <span className="num">{row.id}</span> },
           { key: "username", label: t('col.username') },
-          { key: "status", label: t('col.status') },
+          {
+            key: "status",
+            label: t('col.status'),
+            render: (row: any) => (
+              <StatusBadge tone={row.status === "active" ? "success" : "neutral"}>{row.status}</StatusBadge>
+            ),
+          },
           { key: "role_name", label: t('col.role') },
           {
             key: "totp_enabled",
             label: "MFA",
-            render: (row: any) => (row.totp_enabled ? t('common.enabled') : t('common.disabled')),
+            render: (row: any) => (
+              <StatusBadge tone={row.totp_enabled ? "success" : "neutral"}>
+                {row.totp_enabled ? t('common.enabled') : t('common.disabled')}
+              </StatusBadge>
+            ),
           },
           {
             key: "op",
             label: t('col.actions'),
             render: (row: any) => (
-              <>
+              <div className="flex flex-wrap items-center gap-2">
                 {row.status !== "active" && (
-                  <button className="btn" onClick={() => activate(row.id)}>
-                    {t('admins.activate')}
-                  </button>
+                  <Button onClick={() => activate(row.id)}>{t('admins.activate')}</Button>
                 )}
                 {row.status === "active" && (
-                  <button className="btn" onClick={() => disable(row.id)}>
+                  <Button variant="destructive" onClick={() => disable(row.id)}>
                     {t('admins.disable')}
-                  </button>
+                  </Button>
                 )}
-                <button className="btn" onClick={() => reset(row.id)}>
+                <Button variant="outline" onClick={() => reset(row.id)}>
                   {t('admins.resetPwd')}
-                </button>
-                <button
-                  className="btn"
+                </Button>
+                <Button
+                  variant="outline"
                   onClick={() => setEditTarget({ id: row.id, roleId: String(row.role_id ?? "") })}
                 >
                   {t('admins.changeRole')}
-                </button>
-              </>
+                </Button>
+              </div>
             ),
           },
         ]}
       />
 
       {editTarget != null && (
-        <div className="modal-overlay" onClick={() => setEditTarget(null)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="panel-head">
-              <h2>{t('admins.editTitle', { id: editTarget.id })}</h2>
-              <button className="btn" onClick={() => setEditTarget(null)}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/55"
+          onClick={() => setEditTarget(null)}
+        >
+          <div
+            className="rounded-xl border border-border bg-card p-4 w-[min(560px,92vw)] max-h-[86vh] overflow-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <h2 className="text-base font-semibold">{t('admins.editTitle', { id: editTarget.id })}</h2>
+              <Button variant="ghost" onClick={() => setEditTarget(null)}>
                 {t('common.close')}
-              </button>
+              </Button>
             </div>
-            <div className="inline-form">
-              <select
+            <div className="flex flex-wrap items-center gap-2">
+              <Select
                 value={editTarget.roleId}
                 onChange={(e) => setEditTarget({ ...editTarget, roleId: e.target.value })}
               >
@@ -186,10 +203,10 @@ export function Admins() {
                     {r.name}
                   </option>
                 ))}
-              </select>
-              <button className="btn" disabled={!editTarget.roleId} onClick={saveRole}>
+              </Select>
+              <Button disabled={!editTarget.roleId} onClick={saveRole}>
                 {t('admins.save')}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

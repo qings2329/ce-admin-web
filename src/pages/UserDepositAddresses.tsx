@@ -4,6 +4,9 @@ import { usePaged } from "../lib/usePaged";
 import { ApiTable } from "../components/ApiTable";
 import { Pager } from "../components/Pager";
 import { useI18n } from "../i18n";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Alert } from "../components/ui/alert";
 
 export function UserDepositAddresses() {
   const { t } = useI18n();
@@ -30,30 +33,30 @@ export function UserDepositAddresses() {
   };
 
   return (
-    <div className="page">
-      <h1>{t('depositAddresses.title')}</h1>
-      {error && <div className="alert-error">{error}</div>}
+    <div className="space-y-3">
+      <h1 className="mb-3 text-lg font-semibold text-foreground">{t('depositAddresses.title')}</h1>
+      {error && <Alert variant="error">{error}</Alert>}
 
       <form
-        className="inline-form"
+        className="mb-3 flex flex-wrap items-center gap-2"
         onSubmit={(e) => {
           e.preventDefault();
           reload();
         }}
       >
-        <input
+        <Input
           placeholder={t('depositAddresses.userIdPh')}
           value={userId}
           onChange={(e) => setUserId(e.target.value)}
         />
-        <input
+        <Input
           placeholder={t('depositAddresses.chainPh')}
           value={chain}
           onChange={(e) => setChain(e.target.value.toUpperCase())}
         />
-        <button className="btn" type="submit">
+        <Button type="submit">
           {t('common.query')}
-        </button>
+        </Button>
       </form>
 
       <ApiTable
@@ -72,13 +75,13 @@ export function UserDepositAddresses() {
           />
         }
         columns={[
-          { key: "user_id", label: t('col.userId') },
+          { key: "user_id", label: t('col.userId'), render: (row: any) => <span className="num">{row.user_id}</span> },
           { key: "chain", label: t('col.chain') },
           {
             key: "address",
             label: t('col.address'),
             render: (row: any) => (
-              <span className="addr-cell" title={row.address}>
+              <span className="num" title={row.address}>
                 {row.address}
               </span>
             ),
@@ -87,9 +90,9 @@ export function UserDepositAddresses() {
             key: "op",
             label: t('col.actions'),
             render: (row: any) => (
-              <button className="btn" onClick={() => copy(row.address)}>
+              <Button size="sm" variant="outline" onClick={() => copy(row.address)}>
                 {copied === row.address ? t('depositAddresses.copied') : t('depositAddresses.copy')}
-              </button>
+              </Button>
             ),
           },
         ]}

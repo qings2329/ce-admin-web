@@ -42,6 +42,13 @@ export class ApiError extends Error {
   }
 }
 
+// 会话过期回调：由 AuthProvider 注册，在 token 失效（401）时触发登出跳转。
+type SessionExpiredHandler = () => void;
+let sessionExpiredHandler: SessionExpiredHandler | null = null;
+export function onSessionExpired(handler: SessionExpiredHandler) {
+  sessionExpiredHandler = handler;
+}
+
 // 邀请佣金记录（GET /api/admin/referral/commissions）。
 export interface Commission {
   id: number;
@@ -82,6 +89,12 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   }
   if (!res.ok) {
     const msg = body?.message || res.statusText || "请求失败";
+    // token 已存在却收到 401（后端返回 HTTP 401 或业务码 401，表示 token 过期/失效），
+    // 触发登出并跳转到登录页；无 token（如登录失败）时不触发，避免误跳转。
+    const unauthorized = res.status === 401 || body?.code === 401;
+    if (unauthorized && token) {
+      sessionExpiredHandler?.();
+    }
     throw new ApiError(msg, body?.code ?? -1, res.status);
   }
   if (body && typeof body === "object" && "data" in body) return body.data as T;
