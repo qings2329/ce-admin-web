@@ -2,6 +2,12 @@ import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import { ApiTable } from "../components/ApiTable";
 import { useI18n } from "../i18n";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Select } from "../components/ui/select";
+import { Card, CardContent } from "../components/ui/card";
+import { Alert } from "../components/ui/alert";
+import { StatusBadge, type StatusTone } from "../components/ui/status-badge";
 
 type Tab = "pools" | "lends" | "borrows";
 
@@ -61,6 +67,27 @@ export function LendingAdmin() {
     return m[s] ?? s;
   };
 
+  const statusTone = (s: string): StatusTone => {
+    switch (s) {
+      case "active":
+        return "success";
+      case "repaid":
+        return "success";
+      case "withdrawn":
+        return "danger";
+      case "liquidated":
+        return "danger";
+      case "cancelled":
+        return "neutral";
+      case "closed":
+        return "neutral";
+      case "paused":
+        return "warning";
+      default:
+        return "neutral";
+    }
+  };
+
   const filterByStatus = (rows: any[]) =>
     statusFilter ? rows.filter((r) => r.status === statusFilter) : rows;
 
@@ -82,21 +109,23 @@ export function LendingAdmin() {
   };
 
   return (
-    <div className="page">
-      <h1>{t("lending.title")}</h1>
+    <div className="space-y-4">
+      <h1 className="mb-3 text-lg font-semibold">{t("lending.title")}</h1>
 
-      <div style={{ marginBottom: 12, display: "flex", gap: 8, alignItems: "center" }}>
+      <div className="mb-3 flex gap-1.5">
         {(["pools", "lends", "borrows"] as Tab[]).map((key) => (
-          <button
+          <Button
             key={key}
-            className="btn"
-            style={tab === key ? { fontWeight: "bold" } : undefined}
+            size="sm"
+            variant={tab === key ? "default" : "outline"}
             onClick={() => { setTab(key); setStatusFilter(""); load(key); }}
           >
             {t(`lending.${key === "pools" ? "poolsTitle" : key === "lends" ? "lendsTitle" : "borrowsTitle"}`)}
-          </button>
+          </Button>
         ))}
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+      </div>
+      <div className="mb-3 flex items-center gap-2">
+        <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
           <option value="">{t("common.allStatus")}</option>
           {tab === "pools" && (
             <>
@@ -118,41 +147,46 @@ export function LendingAdmin() {
               <option value="liquidated">{statusLabel("liquidated")}</option>
             </>
           )}
-        </select>
+        </Select>
       </div>
 
-      {error && <div className="alert-error">{error}</div>}
+      {error && <Alert variant="error">{error}</Alert>}
 
       {tab === "pools" && (
         <>
           {!showForm ? (
-            <button className="btn" style={{ marginBottom: 12 }} onClick={() => setShowForm(true)}>
+            <Button className="mb-3" onClick={() => setShowForm(true)}>
               {t("lending.createPool")}
-            </button>
+            </Button>
           ) : (
-            <div style={{ marginBottom: 12, padding: 12, border: "1px solid var(--border)", borderRadius: 6, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-              <input
-                placeholder={t("lending.poolAssetPlaceholder")}
-                value={formAsset}
-                onChange={(e) => setFormAsset(e.target.value)}
-                style={{ width: 120 }}
-              />
-              <input
-                placeholder={t("lending.poolCollateralPlaceholder")}
-                value={formCollateral}
-                onChange={(e) => setFormCollateral(e.target.value)}
-                style={{ width: 140 }}
-                type="number"
-                step="0.1"
-                min="1.0"
-              />
-              <button className="btn" onClick={handleCreatePool} disabled={formBusy || !formAsset.trim()}>
-                {formBusy ? "..." : t("lending.createPool")}
-              </button>
-              <button className="btn" onClick={() => { setShowForm(false); setFormAsset(""); setFormCollateral("1.5"); }}>
-                {t("common.cancel")}
-              </button>
-            </div>
+            <Card className="mb-3">
+              <CardContent className="flex flex-wrap items-center gap-2">
+                <Input
+                  className="w-[120px]"
+                  placeholder={t("lending.poolAssetPlaceholder")}
+                  value={formAsset}
+                  onChange={(e) => setFormAsset(e.target.value)}
+                />
+                <Input
+                  className="w-[140px]"
+                  placeholder={t("lending.poolCollateralPlaceholder")}
+                  value={formCollateral}
+                  onChange={(e) => setFormCollateral(e.target.value)}
+                  type="number"
+                  step="0.1"
+                  min="1.0"
+                />
+                <Button onClick={handleCreatePool} disabled={formBusy || !formAsset.trim()}>
+                  {formBusy ? "..." : t("lending.createPool")}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => { setShowForm(false); setFormAsset(""); setFormCollateral("1.5"); }}
+                >
+                  {t("common.cancel")}
+                </Button>
+              </CardContent>
+            </Card>
           )}
           <ApiTable
             title={t("lending.poolsTitle")}
@@ -162,29 +196,31 @@ export function LendingAdmin() {
             onReload={() => load()}
             emptyText={t("lending.noPools")}
             columns={[
-              { key: "id", label: "ID" },
+              { key: "id", label: "ID", render: (row: any) => <span className="num">{row.id}</span> },
               { key: "asset", label: t("lending.asset") },
-              { key: "total_supply", label: t("lending.totalSupply") },
-              { key: "total_borrow", label: t("lending.totalBorrow") },
-              { key: "available", label: t("lending.available") },
+              { key: "total_supply", label: t("lending.totalSupply"), render: (row: any) => <span className="num">{row.total_supply}</span> },
+              { key: "total_borrow", label: t("lending.totalBorrow"), render: (row: any) => <span className="num">{row.total_borrow}</span> },
+              { key: "available", label: t("lending.available"), render: (row: any) => <span className="num">{row.available}</span> },
               {
                 key: "interest_rate",
                 label: t("lending.interestRate"),
                 render: (row: any) =>
-                  row.interest_rate != null ? `${(row.interest_rate * 100).toFixed(2)}%` : "-",
+                  row.interest_rate != null ? <span className="num">{(row.interest_rate * 100).toFixed(2)}%</span> : "-",
               },
               {
                 key: "collateral_req",
                 label: t("lending.collateralReq"),
                 render: (row: any) =>
-                  row.collateral_req != null ? `${(row.collateral_req * 100).toFixed(0)}%` : "-",
+                  row.collateral_req != null ? <span className="num">{(row.collateral_req * 100).toFixed(0)}%</span> : "-",
               },
               {
                 key: "status",
                 label: t("lending.status"),
-                render: (row: any) => statusLabel(row.status),
+                render: (row: any) => (
+                  <StatusBadge tone={statusTone(row.status)}>{statusLabel(row.status)}</StatusBadge>
+                ),
               },
-              { key: "created_at", label: t("lending.createdAt") },
+              { key: "created_at", label: t("lending.createdAt"), render: (row: any) => <span className="num">{row.created_at}</span> },
             ]}
           />
         </>
@@ -199,22 +235,24 @@ export function LendingAdmin() {
           onReload={() => load()}
           emptyText={t("lending.noLends")}
           columns={[
-            { key: "id", label: "ID" },
-            { key: "user_id", label: t("lending.userId") },
-            { key: "pool_id", label: t("lending.poolId") },
-            { key: "amount", label: t("lending.amount") },
+            { key: "id", label: "ID", render: (row: any) => <span className="num">{row.id}</span> },
+            { key: "user_id", label: t("lending.userId"), render: (row: any) => <span className="num">{row.user_id}</span> },
+            { key: "pool_id", label: t("lending.poolId"), render: (row: any) => <span className="num">{row.pool_id}</span> },
+            { key: "amount", label: t("lending.amount"), render: (row: any) => <span className="num">{row.amount}</span> },
             {
               key: "rate",
               label: t("lending.rate"),
               render: (row: any) =>
-                row.rate != null ? `${(row.rate * 100).toFixed(2)}%` : "-",
+                row.rate != null ? <span className="num">{(row.rate * 100).toFixed(2)}%</span> : "-",
             },
             {
               key: "status",
               label: t("lending.orderStatus"),
-              render: (row: any) => statusLabel(row.status),
+              render: (row: any) => (
+                <StatusBadge tone={statusTone(row.status)}>{statusLabel(row.status)}</StatusBadge>
+              ),
             },
-            { key: "created_at", label: t("lending.createdAt") },
+            { key: "created_at", label: t("lending.createdAt"), render: (row: any) => <span className="num">{row.created_at}</span> },
           ]}
         />
       )}
@@ -228,31 +266,33 @@ export function LendingAdmin() {
           onReload={() => load()}
           emptyText={t("lending.noBorrows")}
           columns={[
-            { key: "id", label: "ID" },
-            { key: "user_id", label: t("lending.userId") },
-            { key: "pool_id", label: t("lending.poolId") },
-            { key: "amount", label: t("lending.amount") },
-            { key: "collateral", label: t("lending.collateral") },
+            { key: "id", label: "ID", render: (row: any) => <span className="num">{row.id}</span> },
+            { key: "user_id", label: t("lending.userId"), render: (row: any) => <span className="num">{row.user_id}</span> },
+            { key: "pool_id", label: t("lending.poolId"), render: (row: any) => <span className="num">{row.pool_id}</span> },
+            { key: "amount", label: t("lending.amount"), render: (row: any) => <span className="num">{row.amount}</span> },
+            { key: "collateral", label: t("lending.collateral"), render: (row: any) => <span className="num">{row.collateral}</span> },
             {
               key: "rate",
               label: t("lending.rate"),
               render: (row: any) =>
-                row.rate != null ? `${(row.rate * 100).toFixed(2)}%` : "-",
+                row.rate != null ? <span className="num">{(row.rate * 100).toFixed(2)}%</span> : "-",
             },
-            { key: "interest_acc", label: t("lending.interestAcc") },
+            { key: "interest_acc", label: t("lending.interestAcc"), render: (row: any) => <span className="num">{row.interest_acc}</span> },
             {
               key: "status",
               label: t("lending.orderStatus"),
-              render: (row: any) => statusLabel(row.status),
+              render: (row: any) => (
+                <StatusBadge tone={statusTone(row.status)}>{statusLabel(row.status)}</StatusBadge>
+              ),
             },
-            { key: "created_at", label: t("lending.createdAt") },
-            { key: "repaid_at", label: t("lending.repaidAt") },
+            { key: "created_at", label: t("lending.createdAt"), render: (row: any) => <span className="num">{row.created_at}</span> },
+            { key: "repaid_at", label: t("lending.repaidAt"), render: (row: any) => <span className="num">{row.repaid_at}</span> },
           ]}
         />
       )}
 
       {tab === "pools" && (
-        <p className="muted">{t("lending.poolsNote")}</p>
+        <p className="text-xs text-muted-foreground">{t("lending.poolsNote")}</p>
       )}
     </div>
   );

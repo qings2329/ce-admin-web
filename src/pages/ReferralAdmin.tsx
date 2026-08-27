@@ -1,6 +1,16 @@
 import { useEffect, useState } from "react";
 import { api, type Commission } from "../api/client";
 import { useI18n } from "../i18n";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "../components/ui/table";
+import { Button } from "../components/ui/button";
+import { StatusBadge, type StatusTone } from "../components/ui/status-badge";
 
 export function ReferralAdmin() {
   const { t } = useI18n();
@@ -23,46 +33,77 @@ export function ReferralAdmin() {
 
   const maxPage = Math.max(1, Math.ceil(total / limit));
 
+  const statusTone = (confirmed: boolean): StatusTone =>
+    confirmed ? "success" : "warning";
+
   return (
-    <div className="page">
-      <h2>{t("referral.adminTitle")}</h2>
-      <p style={{ color: "var(--text-muted)", marginBottom: 16 }}>
+    <div className="space-y-4">
+      <h2 className="mb-3 text-base font-semibold">{t("referral.adminTitle")}</h2>
+      <p className="mb-4 text-sm text-muted-foreground">
         {t("referral.adminDesc")}
       </p>
-      <table className="tbl" style={{ width: "100%" }}>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>{t("referral.adminReferrer")}</th>
-            <th>{t("referral.adminTaker")}</th>
-            <th>{t("referral.asset")}</th>
-            <th>{t("referral.amount")}</th>
-            <th>{t("referral.rate")}</th>
-            <th>{t("referral.status")}</th>
-            <th>{t("referral.time")}</th>
-          </tr>
-        </thead>
-        <tbody>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>ID</TableHead>
+            <TableHead>{t("referral.adminReferrer")}</TableHead>
+            <TableHead>{t("referral.adminTaker")}</TableHead>
+            <TableHead>{t("referral.asset")}</TableHead>
+            <TableHead>{t("referral.amount")}</TableHead>
+            <TableHead>{t("referral.rate")}</TableHead>
+            <TableHead>{t("referral.status")}</TableHead>
+            <TableHead>{t("referral.time")}</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {commissions.length === 0 ? (
-            <tr><td colSpan={8} style={{ textAlign: "center", color: "var(--text-muted)" }}>{t("common.noData")}</td></tr>
-          ) : commissions.map((c) => (
-            <tr key={c.id}>
-              <td>{c.id}</td>
-              <td>{c.referrer_id}</td>
-              <td>{c.taker_id}</td>
-              <td>{c.asset}</td>
-              <td>{(c.amount / 1e6).toFixed(6)}</td>
-              <td>{(c.rate * 100).toFixed(1)}%</td>
-              <td>{c.status === 1 ? t("referral.confirmed") : t("referral.pending")}</td>
-              <td>{c.created_at ? new Date(c.created_at).toLocaleString() : "-"}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <div className="pagination" style={{ marginTop: 12, display: "flex", gap: 8, alignItems: "center" }}>
-        <button disabled={page <= 0} onClick={() => setPage(page - 1)}>{t("common.prev")}</button>
-        <span>{t("common.pageInfo", { page: page + 1, total: maxPage, count: total })}</span>
-        <button disabled={page >= maxPage - 1} onClick={() => setPage(page + 1)}>{t("common.next")}</button>
+            <TableRow>
+              <TableCell colSpan={8} className="text-center text-muted-foreground">
+                {t("common.noData")}
+              </TableCell>
+            </TableRow>
+          ) : (
+            commissions.map((c) => (
+              <TableRow key={c.id}>
+                <TableCell className="num">{c.id}</TableCell>
+                <TableCell className="num">{c.referrer_id}</TableCell>
+                <TableCell className="num">{c.taker_id}</TableCell>
+                <TableCell>{c.asset}</TableCell>
+                <TableCell className="num">{(c.amount / 1e6).toFixed(6)}</TableCell>
+                <TableCell className="num">{(c.rate * 100).toFixed(1)}%</TableCell>
+                <TableCell>
+                  <StatusBadge tone={statusTone(c.status === 1)}>
+                    {c.status === 1 ? t("referral.confirmed") : t("referral.pending")}
+                  </StatusBadge>
+                </TableCell>
+                <TableCell className="num">
+                  {c.created_at ? new Date(c.created_at).toLocaleString() : "-"}
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+      <div className="mt-3 flex items-center gap-2.5">
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={page <= 0}
+          onClick={() => setPage(page - 1)}
+        >
+          {t("common.prev")}
+        </Button>
+        <span className="text-xs text-muted-foreground">
+          {t("common.pageInfo", { page: page + 1, total: maxPage, count: total })}
+        </span>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={page >= maxPage - 1}
+          onClick={() => setPage(page + 1)}
+        >
+          {t("common.next")}
+        </Button>
       </div>
     </div>
   );

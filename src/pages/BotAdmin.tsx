@@ -2,6 +2,10 @@ import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import { ApiTable } from "../components/ApiTable";
 import { useI18n } from "../i18n";
+import { Button } from "../components/ui/button";
+import { Select } from "../components/ui/select";
+import { Alert } from "../components/ui/alert";
+import { StatusBadge, type StatusTone } from "../components/ui/status-badge";
 
 export function BotAdmin() {
   const { t } = useI18n();
@@ -49,23 +53,30 @@ export function BotAdmin() {
     return m[s] ?? s;
   };
 
+  const statusTone = (s: string): StatusTone => {
+    if (s === "active") return "success";
+    if (s === "pending") return "warning";
+    if (s === "stopped") return "neutral";
+    return "neutral";
+  };
+
   const filtered = statusFilter
     ? strategies.filter((s) => (s.status ?? s.state) === statusFilter)
     : strategies;
 
   return (
-    <div className="page">
-      <h1>{t("bot.title")}</h1>
-      {msg && <div className="alert-info">{msg}</div>}
-      {error && <div className="alert-error">{error}</div>}
+    <div className="space-y-4">
+      <h1 className="mb-3 text-lg font-semibold">{t("bot.title")}</h1>
+      {msg && <Alert variant="info">{msg}</Alert>}
+      {error && <Alert variant="error">{error}</Alert>}
 
-      <div style={{ marginBottom: 12, display: "flex", gap: 8, alignItems: "center" }}>
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+      <div className="mb-3 flex items-center gap-2">
+        <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
           <option value="">{t("common.allStatus")}</option>
           <option value="active">{t("bot.stActive")}</option>
           <option value="stopped">{t("bot.stStopped")}</option>
           <option value="pending">{t("bot.stPending")}</option>
-        </select>
+        </Select>
       </div>
 
       <ApiTable
@@ -76,12 +87,16 @@ export function BotAdmin() {
         onReload={load}
         emptyText={t("bot.noStrategies")}
         actions={
-          <button className="btn" onClick={load}>
+          <Button size="sm" variant="outline" onClick={load}>
             {t("common.refresh")}
-          </button>
+          </Button>
         }
         columns={[
-          { key: "id", label: t("bot.strategyId") },
+          {
+            key: "id",
+            label: t("bot.strategyId"),
+            render: (row: any) => <span className="num">{row.id}</span>,
+          },
           { key: "name", label: t("bot.strategyName") },
           { key: "symbol", label: t("bot.symbol") },
           { key: "side", label: t("bot.side") },
@@ -89,23 +104,34 @@ export function BotAdmin() {
           {
             key: "status",
             label: t("bot.status"),
-            render: (row: any) => statusLabel(row.status ?? row.state),
+            render: (row: any) => {
+              const s = row.status ?? row.state;
+              return <StatusBadge tone={statusTone(s)}>{statusLabel(s)}</StatusBadge>;
+            },
           },
-          { key: "user_id", label: t("bot.userId") },
+          {
+            key: "user_id",
+            label: t("bot.userId"),
+            render: (row: any) => <span className="num">{row.user_id}</span>,
+          },
           {
             key: "params",
             label: t("bot.params"),
             render: (row: any) =>
               row.params ? JSON.stringify(row.params) : "-",
           },
-          { key: "created_at", label: t("bot.createdAt") },
+          {
+            key: "created_at",
+            label: t("bot.createdAt"),
+            render: (row: any) => <span className="num">{row.created_at}</span>,
+          },
           {
             key: "op",
             label: "",
             render: (row: any) => (
-              <button className="btn" onClick={() => handleTick(row.id)}>
+              <Button size="sm" variant="outline" onClick={() => handleTick(row.id)}>
                 {t("bot.tick")}
-              </button>
+              </Button>
             ),
           },
         ]}

@@ -5,9 +5,27 @@ import { ApiTable } from "../components/ApiTable";
 import { useAuth, hasPerm } from "../lib/auth";
 import { useI18n } from "../i18n";
 import { formatDateTime } from "../lib/timezone";
+import { Button } from "../components/ui/button";
+import { Select } from "../components/ui/select";
+import { StatusBadge, type StatusTone } from "../components/ui/status-badge";
+import { Alert } from "../components/ui/alert";
 
 function fmtTime(ts?: number): string {
   return formatDateTime(ts);
+}
+
+// 审计动作 → 状态色（与遗留 .ann-badge 映射一致：info→success、warning→warning、maintenance→info）。
+function actionTone(action?: string): StatusTone {
+  switch (action) {
+    case "create":
+      return "success";
+    case "update":
+      return "warning";
+    case "delete":
+      return "info";
+    default:
+      return "success";
+  }
 }
 
 export function Audit() {
@@ -24,28 +42,26 @@ export function Audit() {
 
   if (!canRead) {
     return (
-      <div className="page">
-        <h1>{t('audit.title')}</h1>
-        <div className="alert-error">{t('audit.noPerm')}</div>
+      <div className="space-y-3">
+        <h1 className="text-xl font-semibold">{t('audit.title')}</h1>
+        <Alert variant="error">{t('audit.noPerm')}</Alert>
       </div>
     );
   }
 
   return (
-    <div className="page">
-      <h1>{t('audit.title')}</h1>
-      <div className="inline-form">
-        <label className="ann-active">{t('audit.perPage')}</label>
-        <select value={limit} onChange={(e) => setLimit(e.target.value)}>
+    <div className="space-y-3">
+      <h1 className="text-xl font-semibold">{t('audit.title')}</h1>
+      <div className="flex flex-wrap items-center gap-2 mb-3">
+        <span className="text-xs text-muted-foreground">{t('audit.perPage')}</span>
+        <Select value={limit} onChange={(e) => setLimit(e.target.value)}>
           {["20", "50", "100", "200"].map((n) => (
             <option key={n} value={n}>
               {n}
             </option>
           ))}
-        </select>
-        <button className="btn" onClick={reload}>
-          {t('common.refresh')}
-        </button>
+        </Select>
+        <Button onClick={reload}>{t('common.refresh')}</Button>
       </div>
 
       <ApiTable
@@ -56,12 +72,12 @@ export function Audit() {
         onReload={reload}
         columns={[
           { key: "time", label: t('col.time'), render: (r: any) => fmtTime(r.time) },
-          { key: "admin_id", label: t('col.adminId') },
+          { key: "admin_id", label: t('col.adminId'), render: (r: any) => <span className="num">{r.admin_id}</span> },
           {
             key: "action",
             label: t('col.action'),
             render: (r: any) => (
-              <span className={`ann-badge ${actionClass(r.action)}`}>{r.action || r.method}</span>
+              <StatusBadge tone={actionTone(r.action)}>{r.action || r.method}</StatusBadge>
             ),
           },
           { key: "method", label: t('col.method') },
@@ -71,27 +87,14 @@ export function Audit() {
             key: "status",
             label: t('col.status'),
             render: (r: any) => (
-              <span className={r.status >= 200 && r.status < 300 ? "ann-state on" : "ann-state off"}>
-                {r.status}
-              </span>
+              <StatusBadge tone={r.status >= 200 && r.status < 300 ? "success" : "neutral"}>
+                <span className="num">{r.status}</span>
+              </StatusBadge>
             ),
           },
-          { key: "ip", label: "IP" },
+          { key: "ip", label: "IP", render: (r: any) => <span className="num">{r.ip}</span> },
         ]}
       />
     </div>
   );
-}
-
-function actionClass(action?: string): string {
-  switch (action) {
-    case "create":
-      return "info";
-    case "update":
-      return "warning";
-    case "delete":
-      return "maintenance";
-    default:
-      return "info";
-  }
 }

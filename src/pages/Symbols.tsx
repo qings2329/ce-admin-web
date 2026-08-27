@@ -4,6 +4,10 @@ import { usePaged } from "../lib/usePaged";
 import { ApiTable } from "../components/ApiTable";
 import { Pager } from "../components/Pager";
 import { useI18n } from "../i18n";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Alert } from "../components/ui/alert";
+import { StatusBadge } from "../components/ui/status-badge";
 
 export function Symbols() {
   const { t } = useI18n();
@@ -46,18 +50,18 @@ export function Symbols() {
   };
 
   return (
-    <div className="page">
-      <h1>{t('symbols.title')}</h1>
-      {error && <div className="alert-error">{error}</div>}
-      {msg && <div className="alert-info">{msg}</div>}
+    <div className="space-y-3">
+      <h1 className="mb-3 text-lg font-semibold text-foreground">{t('symbols.title')}</h1>
+      {error && <Alert variant="error">{error}</Alert>}
+      {msg && <Alert variant="info">{msg}</Alert>}
 
-      <form className="inline-form" onSubmit={create}>
-        <input placeholder={t('symbols.pairPh')} value={symbol} onChange={(e) => setSymbol(e.target.value)} />
-        <input placeholder={t('symbols.feeRatePh')} value={fee} onChange={(e) => setFee(e.target.value)} type="number" step="0.0001" />
-        <input placeholder={t('symbols.maxLevPh')} value={lev} onChange={(e) => setLev(e.target.value)} type="number" />
-        <button className="btn" type="submit">
+      <form className="mb-3 flex flex-wrap items-center gap-2" onSubmit={create}>
+        <Input placeholder={t('symbols.pairPh')} value={symbol} onChange={(e) => setSymbol(e.target.value)} />
+        <Input placeholder={t('symbols.feeRatePh')} value={fee} onChange={(e) => setFee(e.target.value)} type="number" step="0.0001" />
+        <Input placeholder={t('symbols.maxLevPh')} value={lev} onChange={(e) => setLev(e.target.value)} type="number" />
+        <Button type="submit">
           {t('symbols.create')}
-        </button>
+        </Button>
       </form>
 
       <ApiTable
@@ -70,17 +74,25 @@ export function Symbols() {
           { key: "symbol", label: t('col.symbolPair') },
           { key: "base", label: t('col.base') },
           { key: "quote", label: t('col.quote') },
-          { key: "status", label: t('col.status') },
-          { key: "fee_rate", label: t('col.feeRate') },
-          { key: "max_leverage", label: t('col.maxLeverage') },
-          { key: "min_qty", label: t('col.minQty') },
+          {
+            key: "status",
+            label: t('col.status'),
+            render: (row: any) => (
+              <StatusBadge tone={row.status === "online" ? "success" : "neutral"}>
+                {row.status}
+              </StatusBadge>
+            ),
+          },
+          { key: "fee_rate", label: t('col.feeRate'), render: (row: any) => <span className="num">{row.fee_rate}</span> },
+          { key: "max_leverage", label: t('col.maxLeverage'), render: (row: any) => <span className="num">{row.max_leverage}</span> },
+          { key: "min_qty", label: t('col.minQty'), render: (row: any) => <span className="num">{row.min_qty}</span> },
           {
             key: "op",
             label: t('col.actions'),
             render: (row: any) => (
-              <button className="btn" onClick={() => toggle(row)}>
+              <Button size="sm" variant="outline" onClick={() => toggle(row)}>
                 {row.status === "online" ? t('symbols.offline') : t('symbols.online')}
-              </button>
+              </Button>
             ),
           },
         ]}

@@ -6,6 +6,10 @@ import { ApiTable } from "../components/ApiTable";
 import { Pager } from "../components/Pager";
 import { useAuth, hasPerm } from "../lib/auth";
 import { useI18n } from "../i18n";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Alert } from "../components/ui/alert";
+import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
 
 export function Roles() {
   const { t } = useI18n();
@@ -99,24 +103,22 @@ export function Roles() {
 
   if (!canManage) {
     return (
-      <div className="page">
-        <h1>{t('roles.title')}</h1>
-        <div className="alert-error">{t('roles.noPerm')}</div>
+      <div className="space-y-3">
+        <h1 className="text-xl font-semibold">{t('roles.title')}</h1>
+        <Alert variant="error">{t('roles.noPerm')}</Alert>
       </div>
     );
   }
 
   return (
-    <div className="page">
-      <h1>{t('roles.title2')}</h1>
-      {msg && <div className="alert-info">{msg}</div>}
+    <div className="space-y-3">
+      <h1 className="text-xl font-semibold">{t('roles.title2')}</h1>
+      {msg && <Alert variant="info">{msg}</Alert>}
 
-      <form className="inline-form" onSubmit={create}>
-        <input placeholder={t('roles.namePh')} value={name} onChange={(e) => setName(e.target.value)} />
-        <input placeholder={t('roles.descPh')} value={desc} onChange={(e) => setDesc(e.target.value)} />
-        <button className="btn" type="submit">
-          {t('roles.create')}
-        </button>
+      <form className="flex flex-wrap items-center gap-2 mb-3" onSubmit={create}>
+        <Input placeholder={t('roles.namePh')} value={name} onChange={(e) => setName(e.target.value)} />
+        <Input placeholder={t('roles.descPh')} value={desc} onChange={(e) => setDesc(e.target.value)} />
+        <Button type="submit">{t('roles.create')}</Button>
       </form>
 
       <ApiTable
@@ -135,103 +137,107 @@ export function Roles() {
           />
         }
         columns={[
-          { key: "id", label: "ID" },
+          { key: "id", label: "ID", render: (row: any) => <span className="num">{row.id}</span> },
           { key: "name", label: t('col.roleName') },
           { key: "description", label: t('col.description') },
           {
             key: "permissions",
             label: t('col.permCount'),
-            render: (row: any) => String((row.permissions ?? []).length),
+            render: (row: any) => <span className="num">{String((row.permissions ?? []).length)}</span>,
           },
           {
             key: "op",
             label: t('col.actions'),
             render: (row: any) => (
-              <>
-                <button
-                  className="btn"
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
                   onClick={() =>
                     setEditTarget({ id: row.id, name: row.name, description: row.description ?? "" })
                   }
                 >
                   {t('common.edit')}
-                </button>
-                <button className="btn" onClick={() => selectRole(row)}>
+                </Button>
+                <Button variant="outline" onClick={() => selectRole(row)}>
                   {t('roles.assign')}
-                </button>
-                <button className="btn" onClick={() => del(row.id)}>
+                </Button>
+                <Button variant="destructive" onClick={() => del(row.id)}>
                   {t('common.delete')}
-                </button>
-              </>
+                </Button>
+              </div>
             ),
           },
         ]}
       />
 
       {selected != null && (
-        <section className="panel">
-          <div className="panel-head">
-            <h2>{t('roles.assignTitle', { id: selected })}</h2>
-            <button className="btn" onClick={savePerms}>
-              {t('roles.savePerms')}
-            </button>
-          </div>
-          <div className="perm-groups">
-            {Object.entries(grouped).map(([g, items]) => (
-              <div key={g} className="perm-group">
-                <h3>{g}</h3>
-                <div className="perm-items">
-                  {items.map((p) => (
-                    <label key={p.key} className="perm-item">
-                      <input
-                        type="checkbox"
-                        checked={!!checked[p.key]}
-                        onChange={(e) =>
-                          setChecked((c) => ({ ...c, [p.key]: e.target.checked }))
-                        }
-                      />
-                      <span>
-                        <b>{p.name}</b>
-                        <code>{p.key}</code>
-                      </span>
-                    </label>
-                  ))}
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('roles.assignTitle', { id: selected })}</CardTitle>
+            <Button onClick={savePerms}>{t('roles.savePerms')}</Button>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {Object.entries(grouped).map(([g, items]) => (
+                <div key={g}>
+                  <h3 className="mb-2 text-sm font-medium">{g}</h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                    {items.map((p) => (
+                      <label key={p.key} className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={!!checked[p.key]}
+                          onChange={(e) =>
+                            setChecked((c) => ({ ...c, [p.key]: e.target.checked }))
+                          }
+                        />
+                        <span>
+                          <b>{p.name}</b> <code className="num text-xs text-muted-foreground">{p.key}</code>
+                        </span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </section>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {editTarget != null && (
-        <div className="modal-overlay" onClick={() => setEditTarget(null)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="panel-head">
-              <h2>{t('roles.editTitle', { id: editTarget.id })}</h2>
-              <button className="btn" onClick={() => setEditTarget(null)}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/55"
+          onClick={() => setEditTarget(null)}
+        >
+          <div
+            className="rounded-xl border border-border bg-card p-4 w-[min(560px,92vw)] max-h-[86vh] overflow-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <h2 className="text-base font-semibold">{t('roles.editTitle', { id: editTarget.id })}</h2>
+              <Button variant="ghost" onClick={() => setEditTarget(null)}>
                 {t('common.close')}
-              </button>
+              </Button>
             </div>
             <form
-              className="inline-form"
+              className="flex flex-wrap items-center gap-2"
               onSubmit={(e) => {
                 e.preventDefault();
                 saveRoleMeta();
               }}
             >
-              <input
+              <Input
                 placeholder={t('roles.namePh')}
                 value={editTarget.name}
                 onChange={(e) => setEditTarget({ ...editTarget, name: e.target.value })}
               />
-              <input
+              <Input
                 placeholder={t('roles.descPh')}
                 value={editTarget.description}
                 onChange={(e) => setEditTarget({ ...editTarget, description: e.target.value })}
               />
-              <button className="btn" type="submit" disabled={!editTarget.name}>
+              <Button type="submit" disabled={!editTarget.name}>
                 {t('roles.save')}
-              </button>
+              </Button>
             </form>
           </div>
         </div>

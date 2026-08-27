@@ -5,8 +5,20 @@ import { api } from "../api/client";
 import { usePaged } from "../lib/usePaged";
 import { ApiTable } from "../components/ApiTable";
 import { Pager } from "../components/Pager";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Select } from "../components/ui/select";
+import { Alert } from "../components/ui/alert";
+import { StatusBadge } from "../components/ui/status-badge";
 
 const LEVELS = ["info", "warning", "maintenance"] as const;
+
+function levelTone(level: string): "success" | "warning" | "info" | "neutral" {
+  if (level === "warning") return "warning";
+  if (level === "maintenance") return "info";
+  if (level === "info") return "success";
+  return "neutral";
+}
 
 // 运营通知：list 为实时聚合（notification 服务 live 项 + 管理后台本地公告）；
 // 仅本地公告可创建/删除，live 项只读。
@@ -48,24 +60,22 @@ export function Notifications() {
   };
 
   return (
-    <div className="page">
-      <h1>{t("ntf.title")}</h1>
-      {error && <div className="alert-error">{error}</div>}
-      {msg && <div className="alert-info">{msg}</div>}
+    <div className="space-y-4 p-4">
+      <h1 className="text-xl font-semibold">{t("ntf.title")}</h1>
+      {error && <Alert variant="error">{error}</Alert>}
+      {msg && <Alert variant="info">{msg}</Alert>}
 
-      <form className="inline-form ann-form" onSubmit={submit}>
-        <select value={level} onChange={(e) => setLevel(e.target.value)}>
+      <form className="flex flex-wrap items-center gap-2 mb-3" onSubmit={submit}>
+        <Select value={level} onChange={(e) => setLevel(e.target.value)}>
           {LEVELS.map((l) => (
             <option key={l} value={l}>
               {l}
             </option>
           ))}
-        </select>
-        <input placeholder={t("ntf.titlePh")} value={title} onChange={(e) => setTitle(e.target.value)} />
-        <input placeholder={t("ntf.bodyPh")} value={body} onChange={(e) => setBody(e.target.value)} />
-        <button className="btn" type="submit">
-          {t("ntf.publishBtn")}
-        </button>
+        </Select>
+        <Input placeholder={t("ntf.titlePh")} value={title} onChange={(e) => setTitle(e.target.value)} />
+        <Input placeholder={t("ntf.bodyPh")} value={body} onChange={(e) => setBody(e.target.value)} />
+        <Button type="submit">{t("ntf.publishBtn")}</Button>
       </form>
 
       <ApiTable
@@ -76,11 +86,11 @@ export function Notifications() {
         onReload={reload}
         actions={<Pager total={total} limit={limit} page={page} onChange={changePage} onLimitChange={changeLimit} />}
         columns={[
-          { key: "id", label: "ID" },
+          { key: "id", label: "ID", mono: true },
           {
             key: "level",
             label: t("col.level"),
-            render: (r: any) => <span className={`ann-badge ${r.level}`}>{r.level}</span>,
+            render: (r: any) => <StatusBadge tone={levelTone(r.level)}>{r.level}</StatusBadge>,
           },
           { key: "title", label: t("col.title") },
           { key: "body", label: t("col.body") },
@@ -89,9 +99,9 @@ export function Notifications() {
             label: t("ntf.source"),
             render: (r: any) =>
               r.source === "live" ? (
-                <span className="ann-state on">{t("ntf.sourceLive")}</span>
+                <StatusBadge tone="success">{t("ntf.sourceLive")}</StatusBadge>
               ) : (
-                <span>{t("ntf.sourceLocal")}</span>
+                <span className="text-xs text-muted-foreground">{t("ntf.sourceLocal")}</span>
               ),
           },
           { key: "created_at", label: t("col.publishedAt"), render: (row: any) => formatDateTime(row.created_at) },
@@ -100,11 +110,11 @@ export function Notifications() {
             label: t("col.actions"),
             render: (row: any) =>
               row.source === "live" ? (
-                <span className="muted">—</span>
+                <span className="text-xs text-muted-foreground">—</span>
               ) : (
-                <button className="btn btn-danger" onClick={() => remove(row.id)}>
+                <Button variant="destructive" size="sm" onClick={() => remove(row.id)}>
                   {t("common.delete")}
-                </button>
+                </Button>
               ),
           },
         ]}

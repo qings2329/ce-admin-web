@@ -6,6 +6,10 @@ import { Pager } from "../components/Pager";
 import { useAuth, hasPerm } from "../lib/auth";
 import { useI18n } from "../i18n";
 import { formatDateTime } from "../lib/timezone";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { StatusBadge } from "../components/ui/status-badge";
+import { Alert } from "../components/ui/alert";
 
 function fmtTime(t: any): string {
   return formatDateTime(t);
@@ -87,37 +91,35 @@ export function ApiKeys() {
 
   if (!canRead) {
     return (
-      <div className="page">
-        <h1>{t('apikeys.title')}</h1>
-        <div className="alert-error">{t('apikeys.noPerm')}</div>
+      <div className="space-y-3">
+        <h1 className="text-xl font-semibold">{t('apikeys.title')}</h1>
+        <Alert variant="error">{t('apikeys.noPerm')}</Alert>
       </div>
     );
   }
 
   return (
-    <div className="page">
-      <h1>{t('apikeys.title')}</h1>
-      {msg && <div className="alert-info">{msg}</div>}
+    <div className="space-y-3">
+      <h1 className="text-xl font-semibold">{t('apikeys.title')}</h1>
+      {msg && <Alert variant="info">{msg}</Alert>}
 
       <form
-        className="inline-form"
+        className="flex flex-wrap items-center gap-2 mb-3"
         onSubmit={(e) => {
           e.preventDefault();
           runQuery();
         }}
       >
-        <input
+        <Input
           placeholder={t('apikeys.userIdPh')}
           value={userId}
           onChange={(e) => setUserId(e.target.value)}
         />
-        <button className="btn" type="submit">
-          {t('apikeys.query')}
-        </button>
+        <Button type="submit">{t('apikeys.query')}</Button>
         {canManage && (
-          <button className="btn" type="button" onClick={openCreate}>
+          <Button type="button" variant="outline" onClick={openCreate}>
             {t('apikeys.issue')}
-          </button>
+          </Button>
         )}
       </form>
 
@@ -137,24 +139,27 @@ export function ApiKeys() {
           />
         }
         columns={[
-          { key: "id", label: "ID" },
-          { key: "user_id", label: t('col.userId') },
+          { key: "id", label: "ID", render: (row: any) => <span className="num">{row.id}</span> },
+          { key: "user_id", label: t('col.userId'), render: (row: any) => <span className="num">{row.user_id}</span> },
           { key: "label", label: t('col.label') },
-          { key: "prefix", label: t('col.prefix') },
+          { key: "prefix", label: t('col.prefix'), render: (row: any) => <span className="num">{row.prefix}</span> },
           {
             key: "permissions",
             label: t('col.scope'),
-            render: (row: any) =>
-              (row.permissions ?? []).length ? (row.permissions as string[]).join(", ") : "—",
+            render: (row: any) => (
+              <span className="num">
+                {(row.permissions ?? []).length ? (row.permissions as string[]).join(", ") : "—"}
+              </span>
+            ),
           },
           {
             key: "status",
             label: t('col.status'),
             render: (row: any) =>
               row.status === "active" ? (
-                <span className="badge-ok">{t('common.valid')}</span>
+                <StatusBadge tone="success">{t('common.valid')}</StatusBadge>
               ) : (
-                <span className="badge-bad">{t('common.revoked')}</span>
+                <StatusBadge tone="danger">{t('common.revoked')}</StatusBadge>
               ),
           },
           { key: "created_at", label: t('col.createdAt'), render: (row: any) => fmtTime(row.created_at) },
@@ -168,62 +173,72 @@ export function ApiKeys() {
             label: t('col.actions'),
             render: (row: any) =>
               row.status === "active" && canManage ? (
-                <button className="btn" onClick={() => revoke(row.id)}>
-                  {t('apikeys.revoke')}
-                </button>
+                <Button onClick={() => revoke(row.id)}>{t('apikeys.revoke')}</Button>
               ) : (
-                <span className="muted">—</span>
+                <span className="text-xs text-muted-foreground">—</span>
               ),
           },
         ]}
       />
 
       {showCreate && (
-        <div className="modal-overlay" onClick={() => setShowCreate(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="panel-head">
-              <h2>{t('apikeys.issueTitle')}</h2>
-              <button className="btn" onClick={() => setShowCreate(false)}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/55"
+          onClick={() => setShowCreate(false)}
+        >
+          <div
+            className="rounded-xl border border-border bg-card p-4 w-[min(560px,92vw)] max-h-[86vh] overflow-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <h2 className="text-base font-semibold">{t('apikeys.issueTitle')}</h2>
+              <Button variant="ghost" onClick={() => setShowCreate(false)}>
                 {t('common.close')}
-              </button>
+              </Button>
             </div>
-            <form className="inline-form" onSubmit={submitCreate}>
-              <input
+            <form className="flex flex-wrap items-center gap-2" onSubmit={submitCreate}>
+              <Input
                 placeholder={t('apikeys.userIdPh2')}
                 value={newUserId}
                 onChange={(e) => setNewUserId(e.target.value)}
               />
-              <input
+              <Input
                 placeholder={t('apikeys.labelPh')}
                 value={label}
                 onChange={(e) => setLabel(e.target.value)}
               />
-              <input
+              <Input
                 placeholder={t('apikeys.scopePh')}
                 value={scopes}
                 onChange={(e) => setScopes(e.target.value)}
               />
-              <button className="btn" type="submit" disabled={creating}>
+              <Button type="submit" disabled={creating}>
                 {creating ? t('apikeys.issuing') : t('apikeys.issueBtn')}
-              </button>
+              </Button>
             </form>
           </div>
         </div>
       )}
 
       {createdKey != null && (
-        <div className="modal-overlay" onClick={() => setCreatedKey(null)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="panel-head">
-              <h2>{t('apikeys.issuedTitle')}</h2>
-              <button className="btn" onClick={() => setCreatedKey(null)}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/55"
+          onClick={() => setCreatedKey(null)}
+        >
+          <div
+            className="rounded-xl border border-border bg-card p-4 w-[min(560px,92vw)] max-h-[86vh] overflow-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <h2 className="text-base font-semibold">{t('apikeys.issuedTitle')}</h2>
+              <Button variant="ghost" onClick={() => setCreatedKey(null)}>
                 {t('apikeys.saved')}
-              </button>
+              </Button>
             </div>
-            <p className="alert-warn">
-              {t('apikeys.plaintextHint')}
-            </p>
-            <pre className="key-secret">{createdKey}</pre>
+            <Alert variant="warn">{t('apikeys.plaintextHint')}</Alert>
+            <pre className="rounded-md border border-border bg-background p-3 font-mono text-xs num whitespace-pre-wrap break-all">
+              {createdKey}
+            </pre>
           </div>
         </div>
       )}

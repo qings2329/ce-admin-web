@@ -4,6 +4,10 @@ import { useAuth, hasPerm } from "../lib/auth";
 import { ApiTable } from "../components/ApiTable";
 import { Pager } from "../components/Pager";
 import { useI18n } from "../i18n";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Select } from "../components/ui/select";
+import { Alert } from "../components/ui/alert";
 
 const STATUSES = ["", "pending", "approved", "rejected"];
 
@@ -72,37 +76,35 @@ export function Deposits() {
   };
 
   return (
-    <div className="page">
-      <h1>{t('deposits.title')}</h1>
-      {msg && <div className="alert-info">{msg}</div>}
+    <div className="space-y-4 p-4">
+      <h1 className="text-xl font-semibold">{t('deposits.title')}</h1>
+      {msg && <Alert variant="info">{msg}</Alert>}
 
       <form
-        className="inline-form"
+        className="flex flex-wrap items-center gap-2 mb-3"
         onSubmit={(e) => {
           e.preventDefault();
           setPage(1);
         }}
       >
-        <input
+        <Input
           placeholder={t('deposits.userIdPh')}
           value={userId}
           onChange={(e) => setUserId(e.target.value)}
         />
-        <input
+        <Input
           placeholder={t('deposits.coinPh')}
           value={coin}
           onChange={(e) => setCoin(e.target.value)}
         />
-        <select value={status} onChange={(e) => setStatus(e.target.value)}>
+        <Select value={status} onChange={(e) => setStatus(e.target.value)}>
           {STATUSES.map((s) => (
             <option key={s} value={s}>
               {s === "" ? t('common.allStatus') : s}
             </option>
           ))}
-        </select>
-        <button className="btn" type="submit">
-          {t('deposits.query')}
-        </button>
+        </Select>
+        <Button type="submit">{t('deposits.query')}</Button>
       </form>
 
       <ApiTable
@@ -112,12 +114,12 @@ export function Deposits() {
         error={error}
         onReload={runQuery}
         columns={[
-          { key: "id", label: "ID" },
-          { key: "user_id", label: t('col.userId') },
+          { key: "id", label: "ID", mono: true },
+          { key: "user_id", label: t('col.userId'), mono: true },
           { key: "coin", label: t('col.coin') },
           { key: "chain", label: t('col.chain') },
-          { key: "amount", label: t('col.amount') },
-          { key: "tx_hash", label: t('col.txHash') },
+          { key: "amount", label: t('col.amount'), mono: true },
+          { key: "tx_hash", label: t('col.txHash'), mono: true },
           { key: "status", label: t('col.status') },
           { key: "time", label: t('col.time') },
         ]}
@@ -142,12 +144,12 @@ export function Deposits() {
         error={error}
         onReload={runQuery}
         columns={[
-          { key: "id", label: "ID" },
-          { key: "user_id", label: t('col.userId') },
+          { key: "id", label: "ID", mono: true },
+          { key: "user_id", label: t('col.userId'), mono: true },
           { key: "coin", label: t('col.coin') },
           { key: "chain", label: t('col.chain') },
-          { key: "amount", label: t('col.amount') },
-          { key: "address", label: t('col.withdrawAddr') },
+          { key: "amount", label: t('col.amount'), mono: true },
+          { key: "address", label: t('col.withdrawAddr'), mono: true },
           { key: "status", label: t('col.status') },
           { key: "time", label: t('col.time') },
           {
@@ -156,19 +158,19 @@ export function Deposits() {
             render: (row: any) =>
               row.status === "pending" ? (
                 canApprove ? (
-                  <span>
-                    <button className="btn" onClick={() => decide(row.id, true)}>
+                  <span className="flex items-center gap-2">
+                    <Button size="sm" onClick={() => decide(row.id, true)}>
                       {t('deposits.approve')}
-                    </button>{" "}
-                    <button className="btn" onClick={() => decide(row.id, false)}>
+                    </Button>
+                    <Button size="sm" onClick={() => decide(row.id, false)}>
                       {t('deposits.reject')}
-                    </button>
+                    </Button>
                   </span>
                 ) : (
-                  <span className="muted">{t('deposits.noApprovePerm')}</span>
+                  <span className="text-xs text-muted-foreground">{t('deposits.noApprovePerm')}</span>
                 )
               ) : (
-                <span className="muted">{t('deposits.handled')}</span>
+                <span className="text-xs text-muted-foreground">{t('deposits.handled')}</span>
               ),
           },
         ]}

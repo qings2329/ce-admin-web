@@ -5,8 +5,20 @@ import { api } from "../api/client";
 import { usePaged } from "../lib/usePaged";
 import { ApiTable } from "../components/ApiTable";
 import { Pager } from "../components/Pager";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Select } from "../components/ui/select";
+import { Alert } from "../components/ui/alert";
+import { StatusBadge } from "../components/ui/status-badge";
 
 const LEVELS = ["info", "warning", "maintenance"] as const;
+
+function levelTone(level: string): "success" | "warning" | "info" | "neutral" {
+  if (level === "warning") return "warning";
+  if (level === "maintenance") return "info";
+  if (level === "info") return "success";
+  return "neutral";
+}
 
 export function Announcements() {
   const { t } = useI18n();
@@ -70,30 +82,30 @@ export function Announcements() {
   };
 
   return (
-    <div className="page">
-      <h1>{t('ann.title')}</h1>
-      {error && <div className="alert-error">{error}</div>}
-      {msg && <div className="alert-info">{msg}</div>}
+    <div className="space-y-4 p-4">
+      <h1 className="text-xl font-semibold">{t('ann.title')}</h1>
+      {error && <Alert variant="error">{error}</Alert>}
+      {msg && <Alert variant="info">{msg}</Alert>}
 
-      <form className="inline-form ann-form" onSubmit={submit}>
-        <select value={level} onChange={(e) => setLevel(e.target.value)}>
+      <form className="flex flex-wrap items-center gap-2 mb-3" onSubmit={submit}>
+        <Select value={level} onChange={(e) => setLevel(e.target.value)}>
           {LEVELS.map((l) => (
             <option key={l} value={l}>
               {l}
             </option>
           ))}
-        </select>
-        <input
+        </Select>
+        <Input
           placeholder={t('ann.titlePh')}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
         />
-        <input
+        <Input
           placeholder={t('ann.bodyPh')}
           value={content}
           onChange={(e) => setContent(e.target.value)}
         />
-        <label className="ann-active">
+        <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <input
             type="checkbox"
             checked={active}
@@ -101,13 +113,13 @@ export function Announcements() {
           />
           {t('ann.publish')}
         </label>
-        <button className="btn" type="submit">
+        <Button type="submit">
           {editing ? t('ann.saveBtn') : t('ann.createBtn')}
-        </button>
+        </Button>
         {editing && (
-          <button className="btn" type="button" onClick={resetForm}>
+          <Button type="button" variant="outline" onClick={resetForm}>
             {t('common.cancel')}
-          </button>
+          </Button>
         )}
       </form>
 
@@ -119,11 +131,11 @@ export function Announcements() {
         onReload={reload}
         actions={<Pager total={total} limit={limit} page={page} onChange={changePage} onLimitChange={changeLimit} />}
         columns={[
-          { key: "id", label: "ID" },
+          { key: "id", label: "ID", mono: true },
           {
             key: "level",
             label: t('col.level'),
-            render: (r: any) => <span className={`ann-badge ${r.level}`}>{r.level}</span>,
+            render: (r: any) => <StatusBadge tone={levelTone(r.level)}>{r.level}</StatusBadge>,
           },
           { key: "title", label: t('col.title') },
           { key: "content", label: t('col.body') },
@@ -131,9 +143,9 @@ export function Announcements() {
             key: "active",
             label: t('col.status'),
             render: (r: any) => (
-              <span className={r.active ? "ann-state on" : "ann-state off"}>
+              <StatusBadge tone={r.active ? "success" : "neutral"}>
                 {r.active ? t('ann.published') : t('ann.draft')}
-              </span>
+              </StatusBadge>
             ),
           },
           { key: "published_at", label: t('col.publishedAt'), render: (row: any) => formatDateTime(row.published_at) },
@@ -142,13 +154,13 @@ export function Announcements() {
             key: "op",
             label: t('col.actions'),
             render: (row: any) => (
-              <span>
-                <button className="btn" onClick={() => startEdit(row)}>
+              <span className="flex items-center gap-2">
+                <Button size="sm" onClick={() => startEdit(row)}>
                   {t('common.edit')}
-                </button>{" "}
-                <button className="btn btn-danger" onClick={() => remove(row.id)}>
+                </Button>
+                <Button size="sm" variant="destructive" onClick={() => remove(row.id)}>
                   {t('common.delete')}
-                </button>
+                </Button>
               </span>
             ),
           },

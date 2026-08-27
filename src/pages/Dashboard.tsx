@@ -1,13 +1,30 @@
 import { useFetch } from "../lib/useFetch";
 import { api } from "../api/client";
 import { useI18n } from "../i18n";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "../components/ui/card";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "../components/ui/table";
+import { StatusBadge } from "../components/ui/status-badge";
+import { Alert } from "../components/ui/alert";
+import { Button } from "../components/ui/button";
 
-function Card({ k, v, hint }: { k: string; v: string; hint?: string }) {
+function Kv({ k, v, hint }: { k: string; v: string; hint?: string }) {
   return (
-    <div className="kv">
-      <span className="kv-k">{k}</span>
-      <span className="kv-v">{v}</span>
-      {hint && <span className="kv-hint">{hint}</span>}
+    <div className="rounded-lg border border-border bg-card p-3 flex flex-col gap-1.5">
+      <span className="text-xs text-muted-foreground">{k}</span>
+      <span className="text-base font-semibold num">{v}</span>
+      {hint && <span className="text-[11px] text-muted-foreground">{hint}</span>}
     </div>
   );
 }
@@ -38,97 +55,103 @@ export function Dashboard() {
     users.error || withdrawals.error || announcements.error || ledger.error || risk.error || services.error;
 
   return (
-    <div className="page">
-      <h1>{t('dash.title')}</h1>
-      {err && <div className="alert-error">{err}</div>}
-      {loading && <div className="muted">{t('common.loading')}</div>}
+    <div className="space-y-4">
+      <h1 className="text-lg font-semibold mb-3">{t('dash.title')}</h1>
+      {err && <Alert variant="error">{err}</Alert>}
+      {loading && <p className="text-muted-foreground text-xs">{t('common.loading')}</p>}
 
-      <section className="panel">
-        <h2>{t('dash.keyMetrics')}</h2>
-        <div className="kv-grid">
-          <Card k={t('dash.usersTotal')} v={String(userCount)} />
-          <Card k={t('dash.pendingWithdraw')} v={String(pendingWd.length)} hint={t('dash.pendingWithdrawHint')} />
-          <Card k={t('dash.annCount')} v={String(annCount)} />
-          <Card
-            k={t('dash.totalAssets')}
-            v={ld ? String(ld.total_assets ?? "-") : "-"}
-            hint={ld ? (ld.reconciled ? t('dash.reconciled') : t('dash.notReconciled')) : undefined}
-          />
-          <Card k={t('dash.discrepancy')} v={ld ? String(ld.discrepancy ?? "-") : "-"} />
-          <Card k={t('dash.insuranceFund')} v={rk ? String(rk.insurance_fund ?? "-") : "-"} />
-          <Card k={t('dash.liqWarn')} v={String(liqCount)} />
-          <Card k={t('dash.adlQueue')} v={String(adlCount)} />
-          <Card k={t('dash.serviceHealth')} v={`${upSvc}/${svcRows.length}`} />
-        </div>
-        {ld?.reconciled === false && (
-          <p className="muted">{t('dash.ledgerNote')}</p>
-        )}
-      </section>
-
-      <section className="panel">
-        <div className="panel-head">
-          <h2>{t('dash.pendingWithdrawTitle', { n: Math.min(pendingWd.length, 5) })}</h2>
-          <a className="btn" href="#/deposits">
-            {t('dash.goReview')}
-          </a>
-        </div>
-        {pendingWd.length === 0 ? (
-          <div className="muted">{t('dash.noPending')}</div>
-        ) : (
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>{t('col.userId')}</th>
-                  <th>{t('col.coin')}</th>
-                  <th>{t('col.amount')}</th>
-                  <th>{t('col.address')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {pendingWd.slice(0, 5).map((w) => (
-                  <tr key={w.id}>
-                    <td>{w.id}</td>
-                    <td>{w.user_id}</td>
-                    <td>{w.coin}</td>
-                    <td>{w.amount}</td>
-                    <td>{w.address}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('dash.keyMetrics')}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            <Kv k={t('dash.usersTotal')} v={String(userCount)} />
+            <Kv k={t('dash.pendingWithdraw')} v={String(pendingWd.length)} hint={t('dash.pendingWithdrawHint')} />
+            <Kv k={t('dash.annCount')} v={String(annCount)} />
+            <Kv
+              k={t('dash.totalAssets')}
+              v={ld ? String(ld.total_assets ?? "-") : "-"}
+              hint={ld ? (ld.reconciled ? t('dash.reconciled') : t('dash.notReconciled')) : undefined}
+            />
+            <Kv k={t('dash.discrepancy')} v={ld ? String(ld.discrepancy ?? "-") : "-"} />
+            <Kv k={t('dash.insuranceFund')} v={rk ? String(rk.insurance_fund ?? "-") : "-"} />
+            <Kv k={t('dash.liqWarn')} v={String(liqCount)} />
+            <Kv k={t('dash.adlQueue')} v={String(adlCount)} />
+            <Kv k={t('dash.serviceHealth')} v={`${upSvc}/${svcRows.length}`} />
           </div>
-        )}
-      </section>
+          {ld?.reconciled === false && (
+            <p className="text-muted-foreground text-xs mt-2">{t('dash.ledgerNote')}</p>
+          )}
+        </CardContent>
+      </Card>
 
-      <section className="panel">
-        <h2>{t('dash.serviceHealth')}</h2>
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>{t('col.service')}</th>
-                <th>{t('col.status')}</th>
-                <th>{t('col.latency')}</th>
-              </tr>
-            </thead>
-            <tbody>
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('dash.pendingWithdrawTitle', { n: Math.min(pendingWd.length, 5) })}</CardTitle>
+          <Button asChild variant="outline" size="sm">
+            <a href="#/deposits">{t('dash.goReview')}</a>
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {pendingWd.length === 0 ? (
+            <p className="text-muted-foreground text-xs">{t('dash.noPending')}</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>ID</TableHead>
+                  <TableHead>{t('col.userId')}</TableHead>
+                  <TableHead>{t('col.coin')}</TableHead>
+                  <TableHead>{t('col.amount')}</TableHead>
+                  <TableHead>{t('col.address')}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {pendingWd.slice(0, 5).map((w) => (
+                  <TableRow key={w.id}>
+                    <TableCell className="num">{w.id}</TableCell>
+                    <TableCell className="num">{w.user_id}</TableCell>
+                    <TableCell>{w.coin}</TableCell>
+                    <TableCell className="num">{w.amount}</TableCell>
+                    <TableCell className="num">{w.address}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('dash.serviceHealth')}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t('col.service')}</TableHead>
+                <TableHead>{t('col.status')}</TableHead>
+                <TableHead>{t('col.latency')}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {svcRows.map((s) => (
-                <tr key={s.name}>
-                  <td>{s.name}</td>
-                  <td>
-                    <span className={s.status === "up" ? "ann-state on" : "ann-state off"}>
+                <TableRow key={s.name}>
+                  <TableCell>{s.name}</TableCell>
+                  <TableCell>
+                    <StatusBadge tone={s.status === "up" ? "success" : "neutral"}>
                       {s.status === "up" ? t('common.normal') : t('common.abnormal')}
-                    </span>
-                  </td>
-                  <td>{s.latency_ms ?? "-"}</td>
-                </tr>
+                    </StatusBadge>
+                  </TableCell>
+                  <TableCell className="num">{s.latency_ms ?? "-"}</TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -1,4 +1,6 @@
 import { useI18n } from "../i18n";
+import { Button } from "./ui/button";
+import { Select } from "./ui/select";
 
 interface PagerProps {
   total: number;
@@ -14,10 +16,9 @@ export function Pager({ total, limit, page, onChange, onLimitChange, limits }: P
   const { t } = useI18n();
   const pages = Math.max(1, Math.ceil(total / limit));
   return (
-    <div className="pager">
+    <div className="flex items-center gap-2.5">
       {onLimitChange && (
-        <select
-          className="pager-limit"
+        <Select
           value={limit}
           onChange={(e) => onLimitChange(parseInt(e.target.value, 10))}
         >
@@ -26,17 +27,17 @@ export function Pager({ total, limit, page, onChange, onLimitChange, limits }: P
               {t('common.perPage', { n })}
             </option>
           ))}
-        </select>
+        </Select>
       )}
-      <button className="btn" disabled={page <= 1} onClick={() => onChange(page - 1)}>
+      <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => onChange(page - 1)}>
         {t('common.prev')}
-      </button>
-      <span className="pager-info">
+      </Button>
+      <span className="text-xs text-muted-foreground">
         {t('common.pageNav', { page, pages, total })}
       </span>
-      <button className="btn" disabled={page >= pages} onClick={() => onChange(page + 1)}>
+      <Button variant="outline" size="sm" disabled={page >= pages} onClick={() => onChange(page + 1)}>
         {t('common.next')}
-      </button>
+      </Button>
     </div>
   );
 }

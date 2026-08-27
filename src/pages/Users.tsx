@@ -4,6 +4,10 @@ import { usePaged } from "../lib/usePaged";
 import { ApiTable } from "../components/ApiTable";
 import { Pager } from "../components/Pager";
 import { useI18n } from "../i18n";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Alert } from "../components/ui/alert";
+import { StatusBadge } from "../components/ui/status-badge";
 
 export function Users() {
   const { t } = useI18n();
@@ -48,29 +52,29 @@ export function Users() {
   };
 
   return (
-    <div className="page">
-      <h1>{t('users.title')}</h1>
-      {error && <div className="alert-error">{error}</div>}
-      {msg && <div className="alert-info">{msg}</div>}
+    <div className="space-y-3">
+      <h1 className="mb-3 text-lg font-semibold text-foreground">{t('users.title')}</h1>
+      {error && <Alert variant="error">{error}</Alert>}
+      {msg && <Alert variant="info">{msg}</Alert>}
 
-      <form className="inline-form" onSubmit={create}>
-        <input placeholder={t('users.usernamePh')} value={username} onChange={(e) => setUsername(e.target.value)} />
-        <input placeholder={t('users.emailPh')} value={email} onChange={(e) => setEmail(e.target.value)} />
-        <input
+      <form className="mb-3 flex flex-wrap items-center gap-2" onSubmit={create}>
+        <Input placeholder={t('users.usernamePh')} value={username} onChange={(e) => setUsername(e.target.value)} />
+        <Input placeholder={t('users.emailPh')} value={email} onChange={(e) => setEmail(e.target.value)} />
+        <Input
           placeholder={t('users.initPwdPh')}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           type="password"
         />
-        <input
+        <Input
           placeholder={t('users.balancePh')}
           value={balance}
           onChange={(e) => setBalance(e.target.value)}
           type="number"
         />
-        <button className="btn" type="submit">
+        <Button type="submit">
           {t('users.create')}
-        </button>
+        </Button>
       </form>
 
       <ApiTable
@@ -80,22 +84,31 @@ export function Users() {
         onReload={reload}
         actions={<Pager total={total} limit={limit} page={page} onChange={changePage} onLimitChange={changeLimit} />}
         columns={[
-          { key: "id", label: "ID" },
+          { key: "id", label: "ID", render: (row: any) => <span className="num">{row.id}</span> },
           { key: "username", label: t('col.username') },
           { key: "email", label: t('col.email') },
-          { key: "status", label: t('col.status') },
-          { key: "kyc", label: "KYC" },
-          { key: "balance", label: t('col.balance') },
+          {
+            key: "status",
+            label: t('col.status'),
+            render: (row: any) => (
+              <StatusBadge tone={row.status === "active" ? "success" : "neutral"}>
+                {row.status}
+              </StatusBadge>
+            ),
+          },
+          {
+            key: "kyc",
+            label: "KYC",
+            render: (row: any) => <StatusBadge tone="neutral">{row.kyc}</StatusBadge>,
+          },
+          { key: "balance", label: t('col.balance'), render: (row: any) => <span className="num">{row.balance}</span> },
           {
             key: "op",
             label: t('col.actions'),
             render: (row: any) => (
-              <button
-                className="btn"
-                onClick={() => toggle(row.id, row.status === "active")}
-              >
+              <Button size="sm" variant="outline" onClick={() => toggle(row.id, row.status === "active")}>
                 {row.status === "active" ? t('users.freeze') : t('users.unfreeze')}
-              </button>
+              </Button>
             ),
           },
         ]}

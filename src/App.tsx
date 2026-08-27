@@ -71,7 +71,7 @@ function Router() {
   return (
     <>
       <NavBar />
-      <main className="content">
+      <main className="mx-auto max-w-[1200px] p-3">
         <Page />
       </main>
     </>

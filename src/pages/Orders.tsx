@@ -5,6 +5,12 @@ import { ApiTable } from "../components/ApiTable";
 import { Pager } from "../components/Pager";
 import { useI18n } from "../i18n";
 import { formatDateTime } from "../lib/timezone";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Select } from "../components/ui/select";
+import { StatusBadge, type StatusTone } from "../components/ui/status-badge";
+import { Alert } from "../components/ui/alert";
+import { Card } from "../components/ui/card";
 
 const MARKETS = ["", "spot", "futures"];
 const STATUSES = ["", "open", "partial", "filled", "canceled", "rejected"];
@@ -15,9 +21,9 @@ function fmtTime(ts?: number): string {
 }
 
 function sideBadge(side: string, t: (key: string, vars?: Record<string, string | number>) => string): JSX.Element {
-  const cls = side === "buy" ? "trade-side buy" : "trade-side sell";
+  const tone = side === "buy" ? "success" : "danger";
   const label = side === "buy" ? t("common.buy") : side === "sell" ? t("common.sell") : side;
-  return <span className={cls}>{label}</span>;
+  return <StatusBadge tone={tone}>{label}</StatusBadge>;
 }
 
 function marketLabel(m: string, t: (key: string, vars?: Record<string, string | number>) => string): string {
@@ -40,6 +46,23 @@ function statusLabel(s: string, t: (key: string, vars?: Record<string, string | 
       return t("orders.stRejected");
     default:
       return s || "-";
+  }
+}
+
+// 订单状态 → 状态色（语义推断：成交=成功、拒绝=危险、取消=中性、挂单/部分成交=待处理）。
+function orderStatusTone(s: string): StatusTone {
+  switch (s) {
+    case "filled":
+      return "success";
+    case "rejected":
+      return "danger";
+    case "canceled":
+      return "neutral";
+    case "open":
+    case "partial":
+      return "warning";
+    default:
+      return "neutral";
   }
 }
 
@@ -134,78 +157,78 @@ export function Orders() {
 
   if (!canRead) {
     return (
-      <div className="page">
-        <h1>{t("orders.title")}</h1>
-        <div className="alert-error">{t("orders.noPerm")}</div>
+      <div className="space-y-3">
+        <h1 className="text-xl font-semibold">{t("orders.title")}</h1>
+        <Alert variant="error">{t("orders.noPerm")}</Alert>
       </div>
     );
   }
 
   return (
-      <div className="page">
-        <h1>{t("orders.title")}</h1>
-        {msg && <div className="alert-info">{msg}</div>}
+    <div className="space-y-3">
+      <h1 className="text-xl font-semibold">{t("orders.title")}</h1>
+      {msg && <Alert variant="info">{msg}</Alert>}
 
-        <div className="tabs">
-          <button
-            className={tab === "orders" ? "tab active" : "tab"}
-            onClick={() => {
-              setTab("orders");
-              setPage(1);
-            }}
-          >
-            {t("orders.tabOrders")}
-          </button>
-          <button
-            className={tab === "trades" ? "tab active" : "tab"}
-            onClick={() => {
-              setTab("trades");
-              setPage(1);
-            }}
-          >
-            {t("orders.tabTrades")}
-          </button>
-        </div>
+      <div className="flex gap-1.5 mb-3">
+        <Button
+          variant={tab === "orders" ? "default" : "outline"}
+          size="sm"
+          onClick={() => {
+            setTab("orders");
+            setPage(1);
+          }}
+        >
+          {t("orders.tabOrders")}
+        </Button>
+        <Button
+          variant={tab === "trades" ? "default" : "outline"}
+          size="sm"
+          onClick={() => {
+            setTab("trades");
+            setPage(1);
+          }}
+        >
+          {t("orders.tabTrades")}
+        </Button>
+      </div>
 
       <form
-        className="inline-form"
+        className="flex flex-wrap items-center gap-2 mb-3"
         onSubmit={(e) => {
           e.preventDefault();
           setPage(1);
         }}
       >
-        <input
+        <Input
           placeholder={t("orders.userIdPh")}
           value={userId}
           onChange={(e) => setUserId(e.target.value)}
         />
-        <input
+        <Input
           placeholder={t("orders.symbolPh")}
           value={symbol}
           onChange={(e) => setSymbol(e.target.value)}
         />
-        <select value={market} onChange={(e) => setMarket(e.target.value)}>
+        <Select value={market} onChange={(e) => setMarket(e.target.value)}>
           {MARKETS.map((m) => (
             <option key={m} value={m}>
               {m === "" ? t("common.allMarket") : marketLabel(m, t)}
             </option>
           ))}
-        </select>
+        </Select>
         {tab === "orders" && (
-          <select value={status} onChange={(e) => setStatus(e.target.value)}>
+          <Select value={status} onChange={(e) => setStatus(e.target.value)}>
             {STATUSES.map((s) => (
               <option key={s} value={s}>
                 {s === "" ? t("common.allStatus") : statusLabel(s, t)}
               </option>
             ))}
-          </select>
+          </Select>
         )}
-        <button className="btn" type="submit">
-          {t("orders.query")}
-        </button>
+        <Button type="submit">{t("orders.query")}</Button>
       </form>
 
-      <p className="muted">{t("orders.total", { total })}</p>
+      <p className="text-xs text-muted-foreground">{t("orders.total", { total })}</p>
 
       {tab === "orders" ? (
         <ApiTable
@@ -214,8 +237,8 @@ export function Orders() {
           loading={loading}
           error={error}
           columns={[
-            { key: "id", label: t("col.orderId") },
-            { key: "user_id", label: t("col.userId") },
+            { key: "id", label: t("col.orderId"), render: (r: any) => <span className="num">{r.id}</span> },
+            { key: "user_id", label: t("col.userId"), render: (r: any) => <span className="num">{r.user_id}</span> },
             { key: "symbol", label: t("col.symbolPair") },
             { key: "market", label: t("col.market"), render: (r: any) => marketLabel(r.market, t) },
             {
@@ -227,24 +250,23 @@ export function Orders() {
             {
               key: "price",
               label: t("col.price"),
-              render: (r: any) => (r.price ? String(r.price) : t("common.marketPrice")),
+              render: (r: any) =>
+                r.price ? <span className="num">{String(r.price)}</span> : t("common.marketPrice"),
             },
-            { key: "qty", label: t("col.amount") },
-            { key: "filled", label: t("col.filled") },
-            { key: "status", label: t("col.status"), render: (r: any) => statusLabel(r.status, t) },
+            { key: "qty", label: t("col.amount"), render: (r: any) => <span className="num">{r.qty}</span> },
+            { key: "filled", label: t("col.filled"), render: (r: any) => <span className="num">{r.filled}</span> },
+            { key: "status", label: t("col.status"), render: (r: any) => <StatusBadge tone={orderStatusTone(r.status)}>{statusLabel(r.status, t)}</StatusBadge> },
             { key: "created_at", label: t("col.createdAt"), render: (r: any) => fmtTime(r.created_at) },
             {
               key: "op",
               label: t("col.actions"),
               render: (row: any) => (
-                <span>
-                  <button className="btn" onClick={() => openDetail(row.id)}>
-                    {t("orders.detail")}
-                  </button>{" "}
+                <span className="flex flex-wrap items-center gap-2">
+                  <Button onClick={() => openDetail(row.id)}>{t("orders.detail")}</Button>
                   {canManage && (row.status === "open" || row.status === "partial") && (
-                    <button className="btn btn-danger" onClick={() => cancel(row)}>
+                    <Button variant="destructive" onClick={() => cancel(row)}>
                       {t("orders.cancel")}
-                    </button>
+                    </Button>
                   )}
                 </span>
               ),
@@ -258,7 +280,7 @@ export function Orders() {
           loading={loading}
           error={error}
           columns={[
-            { key: "id", label: t("col.tradeId") },
+            { key: "id", label: t("col.tradeId"), render: (r: any) => <span className="num">{r.id}</span> },
             { key: "symbol", label: t("col.symbolPair") },
             { key: "market", label: t("col.market"), render: (r: any) => marketLabel(r.market, t) },
             {
@@ -266,10 +288,10 @@ export function Orders() {
               label: t("col.type"),
               render: (r: any) => (r.is_margin ? t("orders.marginX", { n: r.leverage || "-" }) : t("common.spot")),
             },
-            { key: "price", label: t("col.price") },
-            { key: "qty", label: t("col.amount") },
-            { key: "taker_id", label: t("col.takerUser") },
-            { key: "maker_id", label: t("col.makerUser") },
+            { key: "price", label: t("col.price"), render: (r: any) => <span className="num">{r.price}</span> },
+            { key: "qty", label: t("col.amount"), render: (r: any) => <span className="num">{r.qty}</span> },
+            { key: "taker_id", label: t("col.takerUser"), render: (r: any) => <span className="num">{r.taker_id}</span> },
+            { key: "maker_id", label: t("col.makerUser"), render: (r: any) => <span className="num">{r.maker_id}</span> },
             { key: "taker_side", label: t("col.takerSide"), render: (r: any) => sideBadge(r.taker_side, t) },
             { key: "time", label: t("col.tradeTime"), render: (r: any) => fmtTime(r.time) },
           ]}
@@ -290,66 +312,76 @@ export function Orders() {
       )}
 
       {detail && (
-        <div className="modal-overlay" onClick={() => setDetail(null)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="panel-head">
-              <h2>{t("orders.detailTitle", { id: detail.id })}</h2>
-              <button className="btn" onClick={() => setDetail(null)}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/55"
+          onClick={() => setDetail(null)}
+        >
+          <div
+            className="rounded-xl border border-border bg-card p-4 w-[min(560px,92vw)] max-h-[86vh] overflow-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <h2 className="text-base font-semibold">{t("orders.detailTitle", { id: detail.id })}</h2>
+              <Button variant="ghost" onClick={() => setDetail(null)}>
                 {t("common.close")}
-              </button>
+              </Button>
             </div>
             {detailLoading ? (
-              <div className="muted">{t("common.loading")}</div>
+              <div className="text-xs text-muted-foreground">{t("common.loading")}</div>
             ) : (
-              <div className="kv-grid">
-                <div className="kv">
-                  <span className="kv-k">{t("col.userId")}</span>
-                  <span className="kv-v">{detail.user_id}</span>
-                </div>
-                <div className="kv">
-                  <span className="kv-k">{t("col.symbolPair")}</span>
-                  <span className="kv-v">{detail.symbol}</span>
-                </div>
-                <div className="kv">
-                  <span className="kv-k">{t("col.market")}</span>
-                  <span className="kv-v">{marketLabel(detail.market, t)}</span>
-                </div>
-                <div className="kv">
-                  <span className="kv-k">{t("orders.leverage")}</span>
-                  <span className="kv-v">{detail.is_margin ? `×${detail.leverage || "-"}` : t("common.spot")}</span>
-                </div>
-                <div className="kv">
-                  <span className="kv-k">{t("col.side")}</span>
-                  <span className="kv-v">{detail.side}</span>
-                </div>
-                <div className="kv">
-                  <span className="kv-k">{t("col.price")}</span>
-                  <span className="kv-v">{detail.price ? String(detail.price) : t("common.marketPrice")}</span>
-                </div>
-                <div className="kv">
-                  <span className="kv-k">{t("col.amount")}</span>
-                  <span className="kv-v">{detail.qty}</span>
-                </div>
-                <div className="kv">
-                  <span className="kv-k">{t("col.filled")}</span>
-                  <span className="kv-v">{detail.filled}</span>
-                </div>
-                <div className="kv">
-                  <span className="kv-k">{t("col.status")}</span>
-                  <span className="kv-v">{statusLabel(detail.status, t)}</span>
-                </div>
-                <div className="kv">
-                  <span className="kv-k">TimeInForce</span>
-                  <span className="kv-v">{detail.time_in_force || "-"}</span>
-                </div>
-                <div className="kv">
-                  <span className="kv-k">{t("col.createdAt")}</span>
-                  <span className="kv-v">{fmtTime(detail.created_at)}</span>
-                </div>
-                <div className="kv">
-                  <span className="kv-k">{t("col.updatedAt")}</span>
-                  <span className="kv-v">{fmtTime(detail.updated_at)}</span>
-                </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                <Card className="p-3 flex flex-col gap-1.5">
+                  <span className="text-xs text-muted-foreground">{t("col.userId")}</span>
+                  <span className="text-base font-semibold num">{detail.user_id}</span>
+                </Card>
+                <Card className="p-3 flex flex-col gap-1.5">
+                  <span className="text-xs text-muted-foreground">{t("col.symbolPair")}</span>
+                  <span className="text-base font-semibold">{detail.symbol}</span>
+                </Card>
+                <Card className="p-3 flex flex-col gap-1.5">
+                  <span className="text-xs text-muted-foreground">{t("col.market")}</span>
+                  <span className="text-base font-semibold">{marketLabel(detail.market, t)}</span>
+                </Card>
+                <Card className="p-3 flex flex-col gap-1.5">
+                  <span className="text-xs text-muted-foreground">{t("orders.leverage")}</span>
+                  <span className="text-base font-semibold">
+                    {detail.is_margin ? <span className="num">×{detail.leverage || "-"}</span> : t("common.spot")}
+                  </span>
+                </Card>
+                <Card className="p-3 flex flex-col gap-1.5">
+                  <span className="text-xs text-muted-foreground">{t("col.side")}</span>
+                  <span className="text-base font-semibold">{detail.side}</span>
+                </Card>
+                <Card className="p-3 flex flex-col gap-1.5">
+                  <span className="text-xs text-muted-foreground">{t("col.price")}</span>
+                  <span className="text-base font-semibold">
+                    {detail.price ? <span className="num">{String(detail.price)}</span> : t("common.marketPrice")}
+                  </span>
+                </Card>
+                <Card className="p-3 flex flex-col gap-1.5">
+                  <span className="text-xs text-muted-foreground">{t("col.amount")}</span>
+                  <span className="text-base font-semibold num">{detail.qty}</span>
+                </Card>
+                <Card className="p-3 flex flex-col gap-1.5">
+                  <span className="text-xs text-muted-foreground">{t("col.filled")}</span>
+                  <span className="text-base font-semibold num">{detail.filled}</span>
+                </Card>
+                <Card className="p-3 flex flex-col gap-1.5">
+                  <span className="text-xs text-muted-foreground">{t("col.status")}</span>
+                  <span className="text-base font-semibold">{statusLabel(detail.status, t)}</span>
+                </Card>
+                <Card className="p-3 flex flex-col gap-1.5">
+                  <span className="text-xs text-muted-foreground">TimeInForce</span>
+                  <span className="text-base font-semibold">{detail.time_in_force || "-"}</span>
+                </Card>
+                <Card className="p-3 flex flex-col gap-1.5">
+                  <span className="text-xs text-muted-foreground">{t("col.createdAt")}</span>
+                  <span className="text-base font-semibold">{fmtTime(detail.created_at)}</span>
+                </Card>
+                <Card className="p-3 flex flex-col gap-1.5">
+                  <span className="text-xs text-muted-foreground">{t("col.updatedAt")}</span>
+                  <span className="text-base font-semibold">{fmtTime(detail.updated_at)}</span>
+                </Card>
               </div>
             )}
           </div>
