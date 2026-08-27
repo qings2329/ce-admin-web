@@ -69,12 +69,12 @@ function Router() {
 
   const Page = PAGES[path] ?? Dashboard;
   return (
-    <>
+    <div className="flex min-h-screen">
       <NavBar />
-      <main className="mx-auto max-w-[1200px] p-3">
+      <main className="min-w-0 flex-1 p-4">
         <Page />
       </main>
-    </>
+    </div>
   );
 }
 
