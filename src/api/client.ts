@@ -294,4 +294,21 @@ export const api = {
   // ---- 邀请佣金管理 ----
   getReferralCommissions: (params?: { limit?: number; offset?: number }) =>
     request<{ commissions: Commission[]; total: number }>("/api/admin/referral/commissions" + buildQuery(params)),
+
+  // ---- KYC 审核 ----
+  listKycReviews: (params?: Record<string, any>) =>
+    request<{ items: any[]; total: number }>("/api/admin/kyc-reviews" + buildQuery(params)),
+  getKycDetail: (id: number) => request<any>(`/api/admin/kyc-reviews/${id}`),
+  approveKyc: (id: number) => request(`/api/admin/kyc-reviews/${id}/approve`, { method: "POST" }),
+  rejectKyc: (id: number, reason: string) =>
+    request(`/api/admin/kyc-reviews/${id}/reject`, { method: "POST", body: JSON.stringify({ reason }) }),
+
+  // ---- 大额提现人工审核 ----
+  listPendingWithdrawals: (params?: Record<string, any>) =>
+    request<{ items: any[]; total: number }>("/api/admin/pending-withdrawals" + buildQuery(params)),
+  getWithdrawalDetail: (id: number) => request<any>(`/api/admin/withdrawals/${id}/detail`),
+  approveWithdrawalManual: (id: number) =>
+    request(`/api/admin/withdrawals/${id}/approve`, { method: "POST" }),
+  rejectWithdrawalManual: (id: number, reason: string) =>
+    request(`/api/admin/withdrawals/${id}/reject`, { method: "POST", body: JSON.stringify({ reason }) }),
 };

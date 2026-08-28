@@ -8,6 +8,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Alert } from "../components/ui/alert";
 import { StatusBadge } from "../components/ui/status-badge";
+import { ReviewDrawer, type ReviewItem } from "../components/drawer/ReviewDrawer";
 
 export function Users() {
   const { t } = useI18n();
@@ -18,6 +19,9 @@ export function Users() {
   const [password, setPassword] = useState("");
   const [balance, setBalance] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const [drawerItem, setDrawerItem] = useState<ReviewItem | null>(null);
+  const [drawerIndex, setDrawerIndex] = useState(0);
 
   const toggle = async (id: number, freeze: boolean) => {
     try {
@@ -51,11 +55,24 @@ export function Users() {
     }
   };
 
+  const openDrawer = (idx: number) => {
+    setDrawerItem(items[idx]);
+    setDrawerIndex(idx);
+  };
+
+  const closeDrawer = () => setDrawerItem(null);
+
+  const navigate = (idx: number) => {
+    setDrawerItem(items[idx]);
+    setDrawerIndex(idx);
+  };
+
   return (
     <div className="space-y-3">
       <h1 className="mb-3 text-lg font-semibold text-foreground">{t('users.title')}</h1>
       {error && <Alert variant="error">{error}</Alert>}
       {msg && <Alert variant="info">{msg}</Alert>}
+      {toast && <Alert variant="info" className="animate-pulse">{toast}</Alert>}
 
       <form className="mb-3 flex flex-wrap items-center gap-2" onSubmit={create}>
         <Input placeholder={t('users.usernamePh')} value={username} onChange={(e) => setUsername(e.target.value)} />
@@ -106,13 +123,32 @@ export function Users() {
             key: "op",
             label: t('col.actions'),
             render: (row: any) => (
-              <Button size="sm" variant="outline" onClick={() => toggle(row.id, row.status === "active")}>
-                {row.status === "active" ? t('users.freeze') : t('users.unfreeze')}
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button size="sm" variant="outline" onClick={() => toggle(row.id, row.status === "active")}>
+                  {row.status === "active" ? t('users.freeze') : t('users.unfreeze')}
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => openDrawer(items.findIndex((r: any) => r.id === row.id))}>
+                  {t('users.reviewKyc')}
+                </Button>
+              </div>
             ),
           },
         ]}
       />
+
+      {drawerItem && (
+        <ReviewDrawer
+          type="kyc"
+          item={drawerItem}
+          allItems={items as ReviewItem[]}
+          currentIndex={drawerIndex}
+          onClose={closeDrawer}
+          onNavigate={navigate}
+          onApprove={async () => { reload(); closeDrawer(); }}
+          onReject={async () => { reload(); closeDrawer(); }}
+          toast={(m) => { setToast(m); setTimeout(() => setToast(null), 2500); }}
+        />
+      )}
     </div>
   );
 }
