@@ -47,7 +47,7 @@ export const useGlobalStore = create<GlobalState>((set) => ({
   toggleNotif: () => set((s) => ({ notifOpen: !s.notifOpen })),
   closeNotif: () => set({ notifOpen: false }),
 
-  expandedGroups: {},
+  expandedGroups: { finance: true },
   toggleGroup: (group) =>
     set((s) => {
       const next = { ...s.expandedGroups, [group]: !s.expandedGroups[group] };
