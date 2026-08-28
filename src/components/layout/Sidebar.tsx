@@ -297,19 +297,13 @@ export function Sidebar() {
 
   useEffect(() => {
     setMounted(true);
-    // 首次挂载时确保 finance 分组展开，让菜单立即可见
-    const { expandedGroups, toggleGroup } = useGlobalStore.getState();
-    if (!expandedGroups["finance"]) {
-      toggleGroup("finance");
-    }
-    if (!expandedGroups["users"]) {
-      toggleGroup("users");
-    }
-    if (!expandedGroups["trade"]) {
-      toggleGroup("trade");
-    }
-    if (!expandedGroups["system"]) {
-      toggleGroup("system");
+    // 确保所有分组默认展开（即使 localStorage 有旧状态）
+    const { expandedGroups } = useGlobalStore.getState();
+    const groups = ["finance", "users", "trade", "system"];
+    const toExpand = groups.filter((g) => !expandedGroups[g]);
+    if (toExpand.length > 0) {
+      const { toggleGroup } = useGlobalStore.getState();
+      toExpand.forEach((g) => toggleGroup(g));
     }
   }, []);
 
