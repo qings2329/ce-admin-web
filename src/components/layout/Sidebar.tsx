@@ -298,6 +298,11 @@ export function Sidebar() {
 
   useEffect(() => {
     setMounted(true);
+    // 首次挂载时默认展开 finance 分组，让菜单立即可见
+    const { expandedGroups, toggleGroup } = useGlobalStore.getState();
+    if (!expandedGroups["finance"]) {
+      toggleGroup("finance");
+    }
   }, []);
 
   const visibleItems = MENU_ITEMS.filter((item: MenuItem) => {
@@ -349,7 +354,7 @@ export function Sidebar() {
 
       <div className="border-t border-border py-2">
         <div className={cn("px-3 text-[10px] text-muted-foreground", sidebarCollapsed && "text-center")}>
-          {!sidebarCollapsed && <span>v2.0 · Binance Style</span>}
+          {!sidebarCollapsed && <span>v2.0 · New Style</span>}
         </div>
       </div>
     </aside>

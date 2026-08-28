@@ -49,15 +49,24 @@ export const useGlobalStore = create<GlobalState>((set) => ({
 
   expandedGroups: {},
   toggleGroup: (group) =>
-    set((s) => ({
-      expandedGroups: { ...s.expandedGroups, [group]: !s.expandedGroups[group] },
-    })),
+    set((s) => {
+      const next = { ...s.expandedGroups, [group]: !s.expandedGroups[group] };
+      localStorage.setItem("cx_sidebar_groups", JSON.stringify(next));
+      return { expandedGroups: next };
+    }),
 }));
 
-// 启动时从 localStorage 恢复侧边栏折叠状态
-if (typeof window !== "undefined") {
-  const saved = localStorage.getItem("cx_sidebar_collapsed");
-  if (saved === "1") {
-    useGlobalStore.setState({ sidebarCollapsed: true });
+  // 启动时从 localStorage 恢复侧边栏折叠状态；同时恢复各分组展开状态
+  if (typeof window !== "undefined") {
+    const saved = localStorage.getItem("cx_sidebar_collapsed");
+    if (saved === "1") {
+      useGlobalStore.setState({ sidebarCollapsed: true });
+    }
+    // 默认展开首个分组，避免菜单全收
+    const savedGroups = localStorage.getItem("cx_sidebar_groups");
+    if (savedGroups) {
+      try {
+        useGlobalStore.setState({ expandedGroups: JSON.parse(savedGroups) });
+      } catch {}
+    }
   }
-}
