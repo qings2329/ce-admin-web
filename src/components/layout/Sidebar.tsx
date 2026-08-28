@@ -298,17 +298,28 @@ export function Sidebar() {
 
   useEffect(() => {
     setMounted(true);
-    // 首次挂载时默认展开 finance 分组，让菜单立即可见
+    // 首次挂载时确保 finance 分组展开，让菜单立即可见
     const { expandedGroups, toggleGroup } = useGlobalStore.getState();
     if (!expandedGroups["finance"]) {
       toggleGroup("finance");
     }
+    if (!expandedGroups["users"]) {
+      toggleGroup("users");
+    }
+    if (!expandedGroups["trade"]) {
+      toggleGroup("trade");
+    }
+    if (!expandedGroups["system"]) {
+      toggleGroup("system");
+    }
   }, []);
 
   const visibleItems = MENU_ITEMS.filter((item: MenuItem) => {
+    // 分组：只要有一个子项可见就显示分组
     if (item.children) {
       return item.children.some((c: MenuItem) => !c.perm || hasPerm(perms, c.perm));
     }
+    // 顶层菜单：只要有权限或无权限限制就显示；无权限的项仍展示但不可点（由子组件控制）
     return !item.perm || hasPerm(perms, item.perm);
   });
 
