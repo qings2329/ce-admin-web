@@ -8,6 +8,8 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Select } from "../components/ui/select";
 import { Alert } from "../components/ui/alert";
+import { ReviewDrawer, type ReviewItem } from "../components/drawer/ReviewDrawer";
+import { cn } from "../lib/utils";
 
 const STATUSES = ["", "pending", "approved", "rejected"];
 
@@ -29,6 +31,9 @@ export function Deposits() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const [drawerItem, setDrawerItem] = useState<ReviewItem | null>(null);
+  const [drawerIndex, setDrawerIndex] = useState(0);
 
   const runQuery = async () => {
     setLoading(true);
@@ -58,7 +63,6 @@ export function Deposits() {
     }
   };
 
-  // 翻页 / 调整每页条数触发查询；挂载时也会拉取首屏。
   useEffect(() => {
     runQuery();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -75,10 +79,23 @@ export function Deposits() {
     }
   };
 
+  const openDrawer = (idx: number) => {
+    setDrawerItem(withdrawals[idx]);
+    setDrawerIndex(idx);
+  };
+
+  const closeDrawer = () => setDrawerItem(null);
+
+  const navigate = (idx: number) => {
+    setDrawerItem(withdrawals[idx]);
+    setDrawerIndex(idx);
+  };
+
   return (
     <div className="space-y-4 p-4">
       <h1 className="text-xl font-semibold">{t('deposits.title')}</h1>
       {msg && <Alert variant="info">{msg}</Alert>}
+      {toast && <Alert variant="info" className="animate-pulse">{toast}</Alert>}
 
       <form
         className="flex flex-wrap items-center gap-2 mb-3"
@@ -148,21 +165,29 @@ export function Deposits() {
           { key: "user_id", label: t('col.userId'), mono: true },
           { key: "coin", label: t('col.coin') },
           { key: "chain", label: t('col.chain') },
-          { key: "amount", label: t('col.amount'), mono: true },
+          {
+            key: "amount",
+            label: t('col.amount'),
+            render: (r: any) => <span className={cn("num font-semibold", (r.amount ?? 0) >= 100000 ? "text-warning" : "")}>{r.amount?.toLocaleString()}</span>,
+          },
           { key: "address", label: t('col.withdrawAddr'), mono: true },
           { key: "status", label: t('col.status') },
           { key: "time", label: t('col.time') },
           {
             key: "op",
             label: t('col.actions'),
-            render: (row: any) =>
-              row.status === "pending" ? (
+            render: (r: any) => {
+              const idx = withdrawals.findIndex((w: any) => w.id === r.id);
+              return withdrawals[idx]?.status === "pending" ? (
                 canApprove ? (
-                  <span className="flex items-center gap-2">
-                    <Button size="sm" onClick={() => decide(row.id, true)}>
+                  <span className="flex items-center gap-1">
+                    <Button size="sm" variant="ghost" onClick={() => openDrawer(idx >= 0 ? idx : 0)}>
+                      {t('deposits.review')}
+                    </Button>
+                    <Button size="sm" onClick={() => decide(r.id, true)}>
                       {t('deposits.approve')}
                     </Button>
-                    <Button size="sm" onClick={() => decide(row.id, false)}>
+                    <Button size="sm" onClick={() => decide(r.id, false)}>
                       {t('deposits.reject')}
                     </Button>
                   </span>
@@ -171,7 +196,8 @@ export function Deposits() {
                 )
               ) : (
                 <span className="text-xs text-muted-foreground">{t('deposits.handled')}</span>
-              ),
+              );
+            },
           },
         ]}
       />
@@ -185,6 +211,20 @@ export function Deposits() {
             setLimit(l);
             setPage(1);
           }}
+        />
+      )}
+
+      {drawerItem && canApprove && (
+        <ReviewDrawer
+          type="withdrawal"
+          item={drawerItem}
+          allItems={withdrawals as ReviewItem[]}
+          currentIndex={drawerIndex}
+          onClose={closeDrawer}
+          onNavigate={navigate}
+          onApprove={async (id) => { await decide(id, true); closeDrawer(); }}
+          onReject={async (id) => { await decide(id, false); closeDrawer(); }}
+          toast={(m) => { setToast(m); setTimeout(() => setToast(null), 2500); }}
         />
       )}
     </div>

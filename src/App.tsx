@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { AuthProvider, useAuth } from "./lib/auth";
-import { NavBar } from "./components/NavBar";
+import { Layout } from "./components/layout/Layout";
 import { Login } from "./pages/Login";
 import { Risk } from "./pages/Risk";
 import { Users } from "./pages/Users";
@@ -23,6 +23,10 @@ import { UserDepositAddresses } from "./pages/UserDepositAddresses";
 import { LendingAdmin } from "./pages/LendingAdmin";
 import { BotAdmin } from "./pages/BotAdmin";
 import { ReferralAdmin } from "./pages/ReferralAdmin";
+import { RiskDashboard } from "./pages/RiskDashboard";
+import { C2C } from "./pages/C2C";
+import { KycReview } from "./pages/KycReview";
+import { LargeWithdrawalReview } from "./pages/LargeWithdrawalReview";
 
 function useHash() {
   const [hash, setHash] = useState(location.hash || "#/dashboard");
@@ -37,24 +41,28 @@ function useHash() {
 const PAGES: Record<string, () => JSX.Element> = {
   "/dashboard": Dashboard,
   "/risk": Risk,
+  "/risk-dashboard": RiskDashboard,
+  "/kyc-review": KycReview,
+  "/large-withdrawal-review": LargeWithdrawalReview,
   "/users": Users,
   "/symbols": Symbols,
   "/ops": Ops,
   "/deposits": Deposits,
+  "/deposit-addresses": UserDepositAddresses,
   "/chains": Chains,
   "/coins": Coins,
   "/admins": Admins,
   "/roles": Roles,
-  "/settings": Settings,
   "/announcements": Announcements,
   "/notifications": Notifications,
   "/orders": Orders,
   "/audit": Audit,
   "/apikeys": ApiKeys,
-  "/deposit-addresses": UserDepositAddresses,
   "/lending": LendingAdmin,
   "/bot": BotAdmin,
   "/referral": ReferralAdmin,
+  "/c2c": C2C,
+  "/settings": Settings,
 };
 
 function Router() {
@@ -70,14 +78,11 @@ function Router() {
 
   const Page = PAGES[path] ?? Dashboard;
   return (
-    <div className="flex min-h-screen">
-      <NavBar />
-      <main className="min-w-0 flex-1 p-4">
-        <ErrorBoundary>
-          <Page />
-        </ErrorBoundary>
-      </main>
-    </div>
+    <Layout>
+      <ErrorBoundary>
+        <Page />
+      </ErrorBoundary>
+    </Layout>
   );
 }
 
