@@ -134,7 +134,7 @@ export function NotifPanel() {
 // ─── 顶部 Header ──────────────────────────────────────────────────────────────
 export function Header() {
   const { t, locale, setLocale } = useI18n();
-  const { perms, logout, refreshMe } = useAuth();
+  const { role, logout, refreshMe } = useAuth();
   const { openSearch, toggleNotif } = useGlobalStore();
   const [theme, setTheme] = useState<ThemeId>(
     () => (localStorage.getItem(THEME_STORAGE_KEY) as ThemeId) || "dark",
@@ -149,9 +149,9 @@ export function Header() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const roleTag = perms.includes("super_admin")
+  const roleTag = role === "super_admin"
     ? { label: "Super Admin", tone: "destructive" as const }
-    : perms.includes("compliance")
+    : role === "compliance"
       ? { label: "Compliance", tone: "warning" as const }
       : { label: "Operator", tone: "info" as const };
 
