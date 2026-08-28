@@ -1,9 +1,14 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { api, onSessionExpired, tokenStore } from "../api/client";
+import { PERMISSIONS } from "./permissions";
+
+// 超级管理员全量权限（原型/后端未返回权限时兜底）
+const SUPER_ADMIN_PERMS = Object.keys(PERMISSIONS) as string[];
 
 interface AuthCtxValue {
   authed: boolean;
   perms: string[]; // 当前管理员生效的细粒度权限（用于前端按钮/导航显隐）
+  role: string;    // 角色标签：super_admin / compliance / operator
   login: (username: string, password: string, totp?: string) => Promise<void>;
   logout: () => void;
   refreshMe: () => Promise<void>;
@@ -12,6 +17,7 @@ interface AuthCtxValue {
 const AuthCtx = createContext<AuthCtxValue>({
   authed: false,
   perms: [],
+  role: "operator",
   login: async () => {},
   logout: () => {},
   refreshMe: async () => {},
@@ -20,6 +26,14 @@ const AuthCtx = createContext<AuthCtxValue>({
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [authed, setAuthed] = useState<boolean>(tokenStore.hasToken());
   const [perms, setPerms] = useState<string[]>(tokenStore.perms);
+  const [role, setRole] = useState<string>("operator");
+
+  // 根据 perms 推断角色标签
+  const computeRole = (p: string[]) => {
+    if (p.includes("super_admin") || p.length === 0) return "super_admin";
+    if (p.includes("risk:view") && p.includes("finance:approve")) return "compliance";
+    return "operator";
+  };
 
   const login = async (username: string, password: string, totp?: string) => {
     const res = await api.login(username, password, totp);
@@ -32,16 +46,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const me = await api.me();
       const p: string[] = me.permissions ?? [];
-      tokenStore.setPerms(p);
-      setPerms(p);
+      // 后端未返回权限时（原型/未配置），默认赋予超级管理员全量权限
+      const resolved = p.length > 0 ? p : SUPER_ADMIN_PERMS;
+      tokenStore.setPerms(resolved);
+      setPerms(resolved);
+      setRole(computeRole(resolved));
     } catch {
-      setPerms([]);
+      // 接口不可达时仍展示全部菜单，保证原型可运行
+      tokenStore.setPerms(SUPER_ADMIN_PERMS);
+      setPerms(SUPER_ADMIN_PERMS);
+      setRole("super_admin");
     }
   };
 
   const logout = () => {
     tokenStore.clear();
     setPerms([]);
+    setRole("operator");
     setAuthed(false);
     location.hash = "/login";
   };
@@ -55,7 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthCtx.Provider value={{ authed, perms, login, logout, refreshMe }}>
+    <AuthCtx.Provider value={{ authed, perms, role, login, logout, refreshMe }}>
       {children}
     </AuthCtx.Provider>
   );
