@@ -292,7 +292,6 @@ function NavItem({
 }
 
 export function Sidebar() {
-  const { perms } = useAuth();
   const { sidebarCollapsed, toggleSidebar } = useGlobalStore();
   const [mounted, setMounted] = useState(false);
 
@@ -315,12 +314,11 @@ export function Sidebar() {
   }, []);
 
   const visibleItems = MENU_ITEMS.filter((item: MenuItem) => {
-    // 分组：只要有一个子项可见就显示分组
+    // 菜单不根据权限过滤：即使没有权限也显示菜单，权限由页面内按钮控制
     if (item.children) {
-      return item.children.some((c: MenuItem) => !c.perm || hasPerm(perms, c.perm));
+      return item.children.length > 0;
     }
-    // 顶层菜单：只要有权限或无权限限制就显示；无权限的项仍展示但不可点（由子组件控制）
-    return !item.perm || hasPerm(perms, item.perm);
+    return true;
   });
 
   if (!mounted) return null;
