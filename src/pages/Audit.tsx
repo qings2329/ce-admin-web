@@ -38,7 +38,8 @@ export function Audit() {
   const { data, loading, error, reload } = useFetch(() =>
     api.listAuditLogs({ limit: parseInt(limit, 10) || 50 }),
   );
-  const logs = (data ?? []) as any[];
+  // 接口返回 { logs, total }，需取 logs 数组（不能直接把 data 当数组传给表格）。
+  const logs = ((data?.logs as any[]) ?? []) as any[];
 
   if (!canRead) {
     return (
