@@ -246,6 +246,11 @@ const MENU_ITEMS: MenuItem[] = [
         icon: "Wallet",
       },
       {
+        path: "/wealth",
+        label: "nav.wealth",
+        icon: "PieChart",
+      },
+      {
         path: "/bot",
         label: "nav.bot",
         icon: "Bot",

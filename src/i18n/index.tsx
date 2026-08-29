@@ -543,6 +543,7 @@ const zhCN: Dict = {
 
   // ---- 借贷管理 ----
   "nav.lending": "借贷管理",
+  "nav.wealth": "理财管理",
   "nav.bot": "交易机器人",
   "nav.referral": "邀请佣金",
   "lending.title": "借贷管理",
@@ -1362,6 +1363,7 @@ const enUS: Dict = {
 
   // ---- Lending ----
   "nav.lending": "Lending",
+  "nav.wealth": "Wealth",
   "nav.bot": "Trading Bot",
   "lending.title": "Lending Management",
   "lending.poolsTitle": "Lending Pools",
@@ -2049,6 +2051,7 @@ const zhTW: Dict = {
 
   // ---- 借貸管理 ----
   "nav.lending": "借貸管理",
+  "nav.wealth": "理財管理",
   "nav.bot": "交易機器人",
   "nav.referral": "邀請佣金",
   "lending.title": "借貸管理",
@@ -2650,6 +2653,7 @@ const jaJP: Dict = {
 
   // ---- レンディング管理 ----
   "nav.lending": "レンディング管理",
+  "nav.wealth": "資産運用管理",
   "nav.bot": "取引ボット",
   "nav.referral": "招待報酬",
   "lending.title": "レンディング管理",
