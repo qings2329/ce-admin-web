@@ -13,6 +13,7 @@ import { DestructiveActionGuard } from "../components/ui/DestructiveActionGuard"
 import { ReviewDrawer, type ReviewItem } from "../components/drawer/ReviewDrawer";
 import { routeParam } from "../lib/routeQuery";
 import { MaskedText, maskEmail } from "../lib/mask";
+import { Modal } from "../components/ui/Modal";
 
 export function Users() {
   const { t } = useI18n();
@@ -22,6 +23,7 @@ export function Users() {
   const { items, total, limit, page, loading, error, reload, changePage, changeLimit } =
     usePaged((p) => api.listUsers({ ...p, q: qRef.current || undefined }));
   const [creating, setCreating] = useState(false);
+  const [showCreate, setShowCreate] = useState(false);
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -39,6 +41,15 @@ export function Users() {
     } catch (e: any) {
       setMsg(e?.message ?? t('common.opFailed'));
     }
+  };
+
+  const openCreate = () => {
+    setUsername("");
+    setEmail("");
+    setPassword("");
+    setBalance("");
+    setMsg(null);
+    setShowCreate(true);
   };
 
   const create = async (e: React.FormEvent) => {
@@ -70,10 +81,7 @@ export function Users() {
         status: "active",
         kyc: "none",
       });
-      setUsername("");
-      setEmail("");
-      setPassword("");
-      setBalance("");
+      setShowCreate(false);
       reload();
     } catch (e: any) {
       setMsg(e?.message ?? t('common.createFailed'));
@@ -120,26 +128,44 @@ export function Users() {
       {msg && <Alert variant="info">{msg}</Alert>}
       {toast && <Alert variant="info" className="animate-pulse">{toast}</Alert>}
 
-      <form className="mb-3 flex flex-wrap items-center gap-2" onSubmit={create}>
-        <Input placeholder={t('users.usernamePh')} value={username} onChange={(e) => setUsername(e.target.value)} />
-        <Input placeholder={t('users.emailPh')} value={email} onChange={(e) => setEmail(e.target.value)} />
-        <Input
-          placeholder={t('users.initPwdPh')}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          type="password"
-        />
-        <Input
-          placeholder={t('users.balancePh')}
-          value={balance}
-          onChange={(e) => setBalance(e.target.value)}
-          type="number"
-        />
-        <Button type="submit" disabled={creating} className="gap-1.5">
-          {creating && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-          {t('users.create')}
-        </Button>
-      </form>
+      <Button onClick={openCreate} className="mb-3">
+        {t('users.create')}
+      </Button>
+
+      <Modal
+        open={showCreate}
+        title={t('users.create')}
+        onClose={() => setShowCreate(false)}
+        footer={
+          <>
+            <Button type="button" variant="outline" onClick={() => setShowCreate(false)}>
+              {t('common.cancel')}
+            </Button>
+            <Button onClick={(e: any) => create(e)} disabled={creating} className="gap-1.5">
+              {creating && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              {t('users.create')}
+            </Button>
+          </>
+        }
+        size="md"
+      >
+        <form onSubmit={create} className="space-y-4">
+          <Input placeholder={t('users.usernamePh')} value={username} onChange={(e) => setUsername(e.target.value)} />
+          <Input placeholder={t('users.emailPh')} value={email} onChange={(e) => setEmail(e.target.value)} />
+          <Input
+            placeholder={t('users.initPwdPh')}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            type="password"
+          />
+          <Input
+            placeholder={t('users.balancePh')}
+            value={balance}
+            onChange={(e) => setBalance(e.target.value)}
+            type="number"
+          />
+        </form>
+      </Modal>
 
       <form
         className="mb-3 flex flex-wrap items-center gap-2"

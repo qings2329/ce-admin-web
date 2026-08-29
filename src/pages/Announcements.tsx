@@ -12,6 +12,7 @@ import { Select } from "../components/ui/select";
 import { Alert } from "../components/ui/alert";
 import { DestructiveActionGuard } from "../components/ui/DestructiveActionGuard";
 import { StatusBadge } from "../components/ui/status-badge";
+import { Modal } from "../components/ui/Modal";
 
 const LEVELS = ["info", "warning", "maintenance"] as const;
 
@@ -29,6 +30,7 @@ export function Announcements() {
       api.listAnnouncements(p).then((d) => ({ items: d.announcements ?? [], total: d.total ?? 0 })),
     );
   const [submitting, setSubmitting] = useState(false);
+  const [showForm, setShowForm] = useState(false);
   const [level, setLevel] = useState<string>("info");
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -43,6 +45,21 @@ export function Announcements() {
     setActive(true);
     setEditing(null);
     setMsg(null);
+  };
+
+  const openCreate = () => {
+    resetForm();
+    setShowForm(true);
+  };
+
+  const startEdit = (row: any) => {
+    setEditing(row);
+    setLevel(row.level ?? "info");
+    setTitle(row.title ?? "");
+    setContent(row.content ?? "");
+    setActive(!!row.active);
+    setMsg(null);
+    setShowForm(true);
   };
 
   const submit = async (e: React.FormEvent) => {
@@ -60,21 +77,13 @@ export function Announcements() {
         await api.createAnnouncement({ level, title, content, active });
       }
       resetForm();
+      setShowForm(false);
       reload();
     } catch (e: any) {
       setMsg(e?.message ?? t('common.saveFailed'));
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const startEdit = (row: any) => {
-    setEditing(row);
-    setLevel(row.level ?? "info");
-    setTitle(row.title ?? "");
-    setContent(row.content ?? "");
-    setActive(!!row.active);
-    setMsg(null);
   };
 
   const remove = async (id: number) => {
@@ -92,43 +101,56 @@ export function Announcements() {
       {error && <Alert variant="error">{error}</Alert>}
       {msg && <Alert variant="info">{msg}</Alert>}
 
-      <form className="flex flex-wrap items-center gap-2 mb-3" onSubmit={submit}>
-        <Select value={level} onChange={(e) => setLevel(e.target.value)}>
-          {LEVELS.map((l) => (
-            <option key={l} value={l}>
-              {l}
-            </option>
-          ))}
-        </Select>
-        <Input
-          placeholder={t('ann.titlePh')}
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-        />
-        <textarea
-          placeholder={t('ann.bodyPh')}
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          className="rounded-md border border-border bg-transparent px-3 py-1.5 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[80px] resize-y w-full max-w-xs"
-        />
-        <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <input
-            type="checkbox"
-            checked={active}
-            onChange={(e) => setActive(e.target.checked)}
+      <Button onClick={openCreate} className="mb-3">
+        {t('ann.createBtn')}
+      </Button>
+
+      <Modal
+        open={showForm}
+        title={editing ? `${t('common.edit')} · ${t('ann.title')}` : t('ann.createBtn')}
+        onClose={() => { resetForm(); setShowForm(false); }}
+        footer={
+          <>
+            <Button type="button" variant="outline" onClick={() => { resetForm(); setShowForm(false); }}>
+              {t('common.cancel')}
+            </Button>
+            <Button onClick={(e: any) => submit(e)} disabled={submitting} className="gap-1.5">
+              {submitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              {editing ? t('ann.saveBtn') : t('ann.createBtn')}
+            </Button>
+          </>
+        }
+        size="md"
+      >
+        <form onSubmit={submit} className="space-y-4">
+          <Select value={level} onChange={(e) => setLevel(e.target.value)}>
+            {LEVELS.map((l) => (
+              <option key={l} value={l}>
+                {l}
+              </option>
+            ))}
+          </Select>
+          <Input
+            placeholder={t('ann.titlePh')}
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
           />
-          {t('ann.publish')}
-        </label>
-        <Button type="submit" disabled={submitting} className="gap-1.5">
-          {submitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-          {editing ? t('ann.saveBtn') : t('ann.createBtn')}
-        </Button>
-        {editing && (
-          <Button type="button" variant="outline" onClick={resetForm}>
-            {t('common.cancel')}
-          </Button>
-        )}
-      </form>
+          <textarea
+            placeholder={t('ann.bodyPh')}
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            className="w-full rounded-md border border-border bg-transparent px-3 py-1.5 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[80px] resize-y"
+          />
+          <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={active}
+              onChange={(e) => setActive(e.target.checked)}
+            />
+            {t('ann.publish')}
+          </label>
+        </form>
+      </Modal>
 
       <ApiTable
         title={t('ann.listTitle')}
