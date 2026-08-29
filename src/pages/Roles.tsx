@@ -140,7 +140,7 @@ export function Roles() {
         </div>
       </Modal>
 
-      <Modal open={editTarget != null} title={t('roles.editTitle', { id: editTarget!.id })} onClose={() => setEditTarget(null)}
+      <Modal open={editTarget != null} title={editTarget ? t('roles.editTitle', { id: editTarget.id }) : ''} onClose={() => setEditTarget(null)}
         footer={<Button disabled={!editTarget?.name || savingEdit} onClick={saveRoleMeta} className="gap-1.5">
           {savingEdit && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
           {t('roles.save')}

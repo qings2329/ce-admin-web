@@ -147,7 +147,7 @@ export function Admins() {
         </div>
       </Modal>
 
-      <Modal open={editTarget != null} title={t('admins.editTitle', { id: editTarget!.id })} onClose={() => setEditTarget(null)}
+      <Modal open={editTarget != null} title={editTarget ? t('admins.editTitle', { id: editTarget.id }) : ''} onClose={() => setEditTarget(null)}
         footer={<Button disabled={!editTarget?.roleId || savingRole} onClick={saveRole} className="gap-1.5">
           {savingRole && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
           {t('admins.save')}
@@ -160,7 +160,7 @@ export function Admins() {
         </div>
       </Modal>
 
-      <Modal open={resetTarget != null} title={t('admins.resetPwdTitle', { username: resetTarget!.username })} onClose={() => setResetTarget(null)}
+      <Modal open={resetTarget != null} title={resetTarget ? t('admins.resetPwdTitle', { username: resetTarget.username }) : ''} onClose={() => setResetTarget(null)}
         footer={<>
           <Button variant="outline" onClick={() => setResetTarget(null)} disabled={resetting}>{t('common.cancel')}</Button>
           <Button variant="destructive" onClick={doResetPwd} disabled={resetting || !resetPwd} className="gap-1.5">
