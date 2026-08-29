@@ -29,6 +29,8 @@ export function Settings() {
   const [code, setCode] = useState("");
   const [mfaMsg, setMfaMsg] = useState<string | null>(null);
   const [mfaBusy, setMfaBusy] = useState(false);
+  const [showMfaModal, setShowMfaModal] = useState(false);
+  const [mfaStep, setMfaStep] = useState<"init" | "setup" | "enable">("init");
 
   const [prefTheme, setPrefTheme] = useState<ThemeId>(
     () => (localStorage.getItem(THEME_STORAGE_KEY) as ThemeId) || "dark",
@@ -110,16 +112,26 @@ export function Settings() {
     }
   };
 
-  const startSetup = async () => {
+  const openMfaModal = async () => {
+    setMfaMsg(null);
+    setCode("");
+    setMfaStep("init");
+    setShowMfaModal(true);
+  };
+  const doInitSetup = async () => {
+    setMfaBusy(true);
     setMfaMsg(null);
     try {
-      setSetup(await api.mfaSetup());
+      const s = await api.mfaSetup();
+      setSetup(s);
+      setMfaStep("setup");
     } catch (e: any) {
       setMfaMsg(e?.message ?? t("settings.mfaInitFailed"));
+    } finally {
+      setMfaBusy(false);
     }
   };
-  const enable = async () => {
-    if (!setup) return;
+  const doEnable = async () => {
     if (!code) {
       setMfaMsg(t("settings.codeRequired"));
       return;
@@ -131,12 +143,20 @@ export function Settings() {
       setMfaMsg(t("settings.mfaEnabled"));
       setSetup(null);
       setCode("");
+      setMfaStep("enable");
       loadMe();
     } catch (e: any) {
       setMfaMsg(e?.message ?? t("settings.mfaEnableFailed"));
     } finally {
       setMfaBusy(false);
     }
+  };
+  const closeMfaModal = () => {
+    setShowMfaModal(false);
+    setSetup(null);
+    setCode("");
+    setMfaStep("init");
+    setMfaMsg(null);
   };
   const disable = async () => {
     if (!code) {
@@ -281,46 +301,11 @@ export function Settings() {
               </form>
             </CardContent>
           </Card>
-        ) : setup ? (
-          <Card>
-            <CardContent className="space-y-3">
-              <p className="text-sm text-muted-foreground">{t("settings.step1")}</p>
-              <div className="flex items-start gap-2 rounded-md border border-border bg-background p-3">
-                <code className="flex-1 text-xs font-mono whitespace-pre-wrap break-all">{setup.secret}</code>
-                <CopyButton value={setup.secret} />
-              </div>
-              <p className="text-sm text-muted-foreground">{t("settings.step2otp")}</p>
-              <div className="flex items-start gap-2 rounded-md border border-border bg-background p-3">
-                <code className="flex-1 text-xs font-mono whitespace-pre-wrap break-all">{setup.otpauth_uri}</code>
-                <CopyButton value={setup.otpauth_uri} />
-              </div>
-              <p className="text-sm text-muted-foreground">{t("settings.step2")}</p>
-              <form
-                className="flex flex-wrap items-center gap-2"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  enable();
-                }}
-              >
-                <Input
-                  placeholder={t("settings.codePh")}
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  disabled={mfaBusy}
-                  className="max-w-[180px]"
-                />
-                <Button type="submit" disabled={mfaBusy || !code} className="gap-1.5">
-                  {mfaBusy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                  {t("settings.enableMfa")}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
         ) : (
           <Card>
             <CardContent className="space-y-3">
               <p className="text-sm text-muted-foreground">{t("settings.notEnabled")}</p>
-              <Button onClick={startSetup} disabled={mfaBusy} className="gap-1.5">
+              <Button onClick={openMfaModal} disabled={mfaBusy} className="gap-1.5">
                 {mfaBusy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                 {t("settings.bind")}
               </Button>
@@ -328,6 +313,66 @@ export function Settings() {
           </Card>
         )}
       </section>
+
+      {/* MFA 绑定弹窗 */}
+      <Modal open={showMfaModal} title={t("settings.mfa")} onClose={closeMfaModal} size="md"
+        footer={
+          mfaStep === "setup" ? <>
+            <Button variant="outline" onClick={closeMfaModal} disabled={mfaBusy}>{t("common.cancel")}</Button>
+            <Button onClick={doEnable} disabled={mfaBusy || !code} className="gap-1.5">
+              {mfaBusy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              {t("settings.enableMfa")}
+            </Button>
+          </> : mfaStep === "enable" ? (
+            <Button onClick={closeMfaModal}>{t("common.close")}</Button>
+          ) : (
+            <Button onClick={doInitSetup} disabled={mfaBusy} className="gap-1.5">
+              {mfaBusy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              {t("settings.bind")}
+            </Button>
+          )
+        }
+      >
+        {mfaMsg && <Alert variant={mfaMsg.includes("失败") ? "error" : "info"}>{mfaMsg}</Alert>}
+        {mfaStep === "init" && (
+          <div className="text-sm text-muted-foreground">
+            <p>{t("settings.step1")}</p>
+          </div>
+        )}
+        {mfaStep === "setup" && setup && (
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm text-muted-foreground mb-2">{t("settings.step1")}</p>
+              <div className="flex items-start gap-2 rounded-md border border-border bg-background p-3">
+                <code className="flex-1 text-xs font-mono whitespace-pre-wrap break-all">{setup.secret}</code>
+                <CopyButton value={setup.secret} />
+              </div>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground mb-2">{t("settings.step2otp")}</p>
+              <div className="flex items-start gap-2 rounded-md border border-border bg-background p-3">
+                <code className="flex-1 text-xs font-mono whitespace-pre-wrap break-all">{setup.otpauth_uri}</code>
+                <CopyButton value={setup.otpauth_uri} />
+              </div>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground mb-2">{t("settings.step2")}</p>
+              <div className="flex items-center gap-2">
+                <Input
+                  placeholder={t("settings.codePh")}
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  disabled={mfaBusy}
+                  className="max-w-[180px]"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+        {mfaStep === "enable" && (
+          <div className="text-sm text-success font-medium">{t("settings.mfaEnabled")}</div>
+        )}
+      </Modal>
 
       {/* 偏好设置 */}
       <section>
