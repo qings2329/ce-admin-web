@@ -86,8 +86,33 @@ export function useAuth() {
   return useContext(AuthCtx);
 }
 
-// hasPerm 判断权限集合是否包含给定权限之一。
+// 前端语义权限（如 user:view）→ 后端实际返回的细粒度权限（如 user:read）。
+// 后端权限粒度更细（resource:action），这里做显式映射，使菜单/页面级权限能正确匹配。
+const PERM_ALIASES: Record<string, string[]> = {
+  "risk:view": ["risk:read", "risk:view"],
+  "user:view": ["user:read", "user:write", "kyc:read", "kyc:write"],
+  "user:write": ["user:write", "user:read"],
+  "trade:view": ["trade:read", "trade:manage"],
+  "trade:manage": ["trade:manage", "trade:read"],
+  "audit:view": ["audit:read", "audit:view"],
+  "apikey:view": ["apikey:read", "apikey:manage"],
+  "apikey:manage": ["apikey:manage", "apikey:read"],
+  "finance:view": ["deposit:read", "deposit:write", "ledger:read", "ledger:write", "withdraw:read"],
+  "finance:approve": ["withdraw:approval", "withdraw:read", "withdraw:write"],
+  "c2c:view": ["c2c:read", "c2c:manage", "c2c:write"],
+  "c2c:manage": ["c2c:manage", "c2c:write", "c2c:read"],
+  "admin:manage": ["admin:manage", "admin:read", "user:read"],
+  "role:manage": ["role:read", "role:manage", "role:write", "user:read"],
+  "system:config": ["symbol:read", "symbol:write", "coin:read", "coin:write", "chain:read", "chain:write"],
+  "sys:settings": ["sys:settings", "sys:read", "service:read", "service:write"],
+  "ops:view": ["ops:view", "ops:read", "dashboard:view", "dashboard:read"],
+  "notification:write": ["notification:manage", "notification:read", "notification:write"],
+  "announcement:write": ["announcement:read", "announcement:write", "announcement:manage"],
+};
+
+// hasPerm 判断权限集合是否包含给定权限之一（支持前端语义权限映射到后端细粒度权限）。
 export function hasPerm(perms: string[], ...need: string[]): boolean {
   if (need.length === 0) return true;
-  return need.some((n) => perms.includes(n));
+  const expanded = need.flatMap((n) => [n, ...(PERM_ALIASES[n] ?? [])]);
+  return expanded.some((n) => perms.includes(n));
 }
