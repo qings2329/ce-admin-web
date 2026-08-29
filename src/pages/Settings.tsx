@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import { api } from "../api/client";
 import { useI18n, LOCALES } from "../i18n";
 import { applyTheme, THEMES, THEME_STORAGE_KEY, type ThemeId } from "../lib/theme";
@@ -27,10 +28,12 @@ export function Settings() {
 
   const [setup, setSetup] = useState<{ secret: string; otpauth_uri: string } | null>(null);
   const [code, setCode] = useState("");
+  const [otpDigits, setOtpDigits] = useState<string[]>(["", "", "", "", "", ""]);
   const [mfaMsg, setMfaMsg] = useState<string | null>(null);
   const [mfaBusy, setMfaBusy] = useState(false);
   const [showMfaModal, setShowMfaModal] = useState(false);
   const [mfaStep, setMfaStep] = useState<"init" | "setup" | "enable">("init");
+  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const [prefTheme, setPrefTheme] = useState<ThemeId>(
     () => (localStorage.getItem(THEME_STORAGE_KEY) as ThemeId) || "dark",
@@ -131,18 +134,50 @@ export function Settings() {
       setMfaBusy(false);
     }
   };
+  const closeMfaModal = () => {
+    setShowMfaModal(false);
+    setSetup(null);
+    setCode("");
+    setOtpDigits(["", "", "", "", "", ""]);
+    setMfaStep("init");
+    setMfaMsg(null);
+  };
+  const handleOtpDigitChange = (idx: number, val: string) => {
+    const d = [...otpDigits];
+    d[idx] = val.replace(/[^0-9]/g, "").slice(-1);
+    setOtpDigits(d);
+    if (val && idx < 5) {
+      otpRefs.current[idx + 1]?.focus();
+    }
+  };
+  const handleOtpKeyDown = (idx: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace" && !otpDigits[idx] && idx > 0) {
+      otpRefs.current[idx - 1]?.focus();
+    }
+  };
+  const handleOtpPaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const paste = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (!paste) return;
+    const d = [...otpDigits];
+    paste.split("").forEach((ch, i) => { d[i] = ch; });
+    setOtpDigits(d);
+    const next = Math.min(paste.length, 5);
+    otpRefs.current[next]?.focus();
+  };
   const doEnable = async () => {
-    if (!code) {
+    const entered = otpDigits.join("");
+    if (!entered || entered.length !== 6) {
       setMfaMsg(t("settings.codeRequired"));
       return;
     }
     setMfaBusy(true);
     setMfaMsg(null);
     try {
-      await api.mfaEnable(code);
+      await api.mfaEnable(entered);
       setMfaMsg(t("settings.mfaEnabled"));
       setSetup(null);
-      setCode("");
+      setOtpDigits(["", "", "", "", "", ""]);
       setMfaStep("enable");
       loadMe();
     } catch (e: any) {
@@ -150,13 +185,6 @@ export function Settings() {
     } finally {
       setMfaBusy(false);
     }
-  };
-  const closeMfaModal = () => {
-    setShowMfaModal(false);
-    setSetup(null);
-    setCode("");
-    setMfaStep("init");
-    setMfaMsg(null);
   };
   const disable = async () => {
     if (!code) {
@@ -340,31 +368,35 @@ export function Settings() {
           </div>
         )}
         {mfaStep === "setup" && setup && (
-          <div className="space-y-4">
-            <div>
-              <p className="text-sm text-muted-foreground mb-2">{t("settings.step1")}</p>
-              <div className="flex items-start gap-2 rounded-md border border-border bg-background p-3">
-                <code className="flex-1 text-xs font-mono whitespace-pre-wrap break-all">{setup.secret}</code>
+          <div className="space-y-5">
+            <div className="flex flex-col items-center gap-3">
+              <p className="text-sm text-muted-foreground self-start">{t("settings.step1")}</p>
+              <div className="rounded-xl border-2 border-dashed border-border p-4 bg-background flex justify-center">
+                <QRCodeSVG value={setup.otpauth_uri} size={180} level="M" />
+              </div>
+              <div className="flex items-center gap-2 w-full">
+                <code className="flex-1 text-xs font-mono text-muted-foreground truncate">{setup.secret}</code>
                 <CopyButton value={setup.secret} />
               </div>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground mb-2">{t("settings.step2otp")}</p>
-              <div className="flex items-start gap-2 rounded-md border border-border bg-background p-3">
-                <code className="flex-1 text-xs font-mono whitespace-pre-wrap break-all">{setup.otpauth_uri}</code>
-                <CopyButton value={setup.otpauth_uri} />
-              </div>
+              <p className="text-[11px] text-muted-foreground text-center">{t("settings.scanQrHint")}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground mb-2">{t("settings.step2")}</p>
-              <div className="flex items-center gap-2">
-                <Input
-                  placeholder={t("settings.codePh")}
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  disabled={mfaBusy}
-                  className="max-w-[180px]"
-                />
+              <div className="flex justify-center gap-2" onPaste={handleOtpPaste}>
+                {otpDigits.map((d, i) => (
+                  <input
+                    key={i}
+                    ref={(el) => { otpRefs.current[i] = el; }}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={1}
+                    value={d}
+                    onChange={(e) => handleOtpDigitChange(i, e.target.value)}
+                    onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                    disabled={mfaBusy}
+                    className="w-10 h-12 text-center text-lg font-mono font-semibold rounded-md border border-border bg-background focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+                  />
+                ))}
               </div>
             </div>
           </div>
