@@ -7,9 +7,10 @@ interface PasswordFieldProps extends React.InputHTMLAttributes<HTMLInputElement>
   label?: string;
   strengthLabel?: string;
   showStrength?: boolean;
+  getStrengthText?: (level: number) => string;
 }
 
-export function PasswordField({ className, label, showStrength = true, ...props }: PasswordFieldProps) {
+export function PasswordField({ className, label, showStrength = true, getStrengthText, ...props }: PasswordFieldProps) {
   const [visible, setVisible] = useState(false);
   const [strength, setStrength] = useState(0);
 
@@ -27,6 +28,7 @@ export function PasswordField({ className, label, showStrength = true, ...props 
 
   const strengthLabel = () => {
     if (pct === 0) return "";
+    if (getStrengthText) return getStrengthText(pct);
     if (pct <= 2) return "弱";
     if (pct <= 3) return "中";
     return "强";
@@ -70,3 +72,4 @@ export function PasswordField({ className, label, showStrength = true, ...props 
     </div>
   );
 }
+

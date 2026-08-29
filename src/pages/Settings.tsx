@@ -234,7 +234,7 @@ export function Settings() {
         </>}>
         <form className="space-y-3" onSubmit={changePw}>
           <PasswordField label={t("settings.oldPwd")} placeholder={t("settings.oldPwdPh")} value={oldPw} onChange={(e: any) => setOldPw(e.target.value)} disabled={pwBusy} />
-          <PasswordField label={t("settings.newPwd")} placeholder={t("settings.newPwdPh")} value={newPw} onChange={(e: any) => setNewPw(e.target.value)} disabled={pwBusy} showStrength />
+          <PasswordField label={t("settings.newPwd")} placeholder={t("settings.newPwdPh")} value={newPw} onChange={(e: any) => setNewPw(e.target.value)} disabled={pwBusy} showStrength getStrengthText={(p) => p <= 2 ? t("settings.pwStrengthWeak") : p <= 3 ? t("settings.pwStrengthMedium") : t("settings.pwStrengthStrong")} />
           <PasswordField label={t("settings.confirmPwd")} placeholder={t("settings.confirmPwdPh")} value={confirmPw} onChange={(e: any) => setConfirmPw(e.target.value)} disabled={pwBusy} showStrength={false} />
         </form>
       </Modal>
