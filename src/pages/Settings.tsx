@@ -12,11 +12,13 @@ import { StatusBadge } from "../components/ui/status-badge";
 import { DestructiveActionGuard } from "../components/ui/DestructiveActionGuard";
 import { CopyButton } from "../components/ui/CopyButton";
 import { PasswordField } from "../components/ui/PasswordField";
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { Modal } from "../components/ui/Modal";
+import { AlertTriangle, Loader2, Key } from "lucide-react";
 
 export function Settings() {
   const { t, locale, setLocale } = useI18n();
   const [me, setMe] = useState<any>(null);
+  const [showPwModal, setShowPwModal] = useState(false);
   const [oldPw, setOldPw] = useState("");
   const [newPw, setNewPw] = useState("");
   const [confirmPw, setConfirmPw] = useState("");
@@ -36,6 +38,18 @@ export function Settings() {
   const [prefBusy, setPrefBusy] = useState(false);
 
   const touchedRef = useRef<{ lang?: boolean; theme?: boolean; tz?: boolean }>({});
+
+  const resetPwState = () => {
+    setOldPw("");
+    setNewPw("");
+    setConfirmPw("");
+    setPwMsg(null);
+  };
+
+  const openPwModal = () => {
+    resetPwState();
+    setShowPwModal(true);
+  };
 
   const loadMe = async () => {
     try {
@@ -88,6 +102,7 @@ export function Settings() {
       setOldPw("");
       setNewPw("");
       setConfirmPw("");
+      setShowPwModal(false);
     } catch (e: any) {
       setPwMsg(e?.message ?? t("settings.pwChangeFailed"));
     } finally {
@@ -198,41 +213,31 @@ export function Settings() {
 
       {/* 修改密码 */}
       <section>
-        <h2 className="mb-3 mt-1 text-base font-semibold">{t("settings.changePwd")}</h2>
-        <Card>
-          <CardContent>
-            <form className="space-y-3" onSubmit={changePw}>
-              <PasswordField
-                label={t("settings.oldPwd")}
-                placeholder={t("settings.oldPwdPh")}
-                value={oldPw}
-                onChange={(e) => setOldPw(e.target.value)}
-                disabled={pwBusy}
-              />
-              <PasswordField
-                label={t("settings.newPwd")}
-                placeholder={t("settings.newPwdPh")}
-                value={newPw}
-                onChange={(e) => setNewPw(e.target.value)}
-                disabled={pwBusy}
-              />
-              <PasswordField
-                label={t("settings.confirmPwd")}
-                placeholder={t("settings.confirmPwdPh")}
-                value={confirmPw}
-                onChange={(e) => setConfirmPw(e.target.value)}
-                disabled={pwBusy}
-              />
-              <div className="flex items-center gap-2 pt-1">
-                <Button type="submit" disabled={pwBusy} className="gap-1.5">
-                  {pwBusy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                  {t("settings.changePwd")}
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
+        <div className="flex items-center justify-between mb-3 mt-1">
+          <h2 className="text-base font-semibold">{t("settings.changePwd")}</h2>
+          <Button onClick={openPwModal} className="gap-1.5">
+            <Key className="h-3.5 w-3.5" />
+            {t("settings.changePwd")}
+          </Button>
+        </div>
+        {pwMsg && <Alert variant={pwMsg.includes("失败") ? "error" : "info"}>{pwMsg}</Alert>}
       </section>
+
+      {/* 修改密码弹窗 */}
+      <Modal open={showPwModal} title={t("settings.changePwd")} onClose={() => setShowPwModal(false)}
+        footer={<>
+          <Button variant="outline" onClick={() => setShowPwModal(false)} disabled={pwBusy}>{t("common.cancel")}</Button>
+          <Button onClick={(e: any) => changePw(e)} disabled={pwBusy} className="gap-1.5">
+            {pwBusy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            {t("settings.changePwd")}
+          </Button>
+        </>}>
+        <form className="space-y-3" onSubmit={changePw}>
+          <PasswordField label={t("settings.oldPwd")} placeholder={t("settings.oldPwdPh")} value={oldPw} onChange={(e: any) => setOldPw(e.target.value)} disabled={pwBusy} />
+          <PasswordField label={t("settings.newPwd")} placeholder={t("settings.newPwdPh")} value={newPw} onChange={(e: any) => setNewPw(e.target.value)} disabled={pwBusy} showStrength />
+          <PasswordField label={t("settings.confirmPwd")} placeholder={t("settings.confirmPwdPh")} value={confirmPw} onChange={(e: any) => setConfirmPw(e.target.value)} disabled={pwBusy} showStrength={false} />
+        </form>
+      </Modal>
 
       {/* MFA */}
       <section>
