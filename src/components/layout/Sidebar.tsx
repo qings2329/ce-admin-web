@@ -21,6 +21,12 @@ import {
   ChevronDown,
   CircleDollarSign,
   Scale,
+  Activity,
+  ArrowLeftRight,
+  KeyRound,
+  Package,
+  Gift,
+  Link,
 } from "lucide-react";
 import type { MenuItem, PermissionKey } from "../../lib/permissions";
 
@@ -33,8 +39,10 @@ function NavIcon({ name }: { name?: string }) {
     TrendingUp: <TrendingUp className="h-4 w-4 shrink-0" />,
     Coins: <Coins className="h-4 w-4 shrink-0" />,
     LinkIcon: <LinkIcon className="h-4 w-4 shrink-0" />,
+    Link: <Link className="h-4 w-4 shrink-0" />,
     UserCog: <UserCog className="h-4 w-4 shrink-0" />,
     Key: <Key className="h-4 w-4 shrink-0" />,
+    KeyRound: <KeyRound className="h-4 w-4 shrink-0" />,
     FileText: <FileText className="h-4 w-4 shrink-0" />,
     Settings: <Settings className="h-4 w-4 shrink-0" />,
     Bell: <Bell className="h-4 w-4 shrink-0" />,
@@ -42,12 +50,17 @@ function NavIcon({ name }: { name?: string }) {
     Bot: <Bot className="h-4 w-4 shrink-0" />,
     CircleDollarSign: <CircleDollarSign className="h-4 w-4 shrink-0" />,
     Scale: <Scale className="h-4 w-4 shrink-0" />,
+    Activity: <Activity className="h-4 w-4 shrink-0" />,
+    ArrowLeftRight: <ArrowLeftRight className="h-4 w-4 shrink-0" />,
+    Tool: <Package className="h-4 w-4 shrink-0" />,
+    Gift: <Gift className="h-4 w-4 shrink-0" />,
   };
   return icons[name ?? ""] ?? null;
 }
 
 // ─── 菜单定义 ─────────────────────────────────────────────────────────────────
 const MENU_ITEMS: MenuItem[] = [
+  // ── 运营 ──────────────────────────────────────────────────────────────────
   {
     path: "/dashboard",
     label: "nav.dashboard",
@@ -55,48 +68,27 @@ const MENU_ITEMS: MenuItem[] = [
     perm: "ops:view" as PermissionKey,
   },
   {
-    path: "/risk",
-    label: "nav.risk",
+    path: "/ops",
+    label: "nav.ops",
+    icon: "TrendingUp",
+    perm: "ops:view" as PermissionKey,
+  },
+
+  // ── 风控 ──────────────────────────────────────────────────────────────────
+  {
+    path: "/risk-dashboard",
+    label: "nav.riskDashboard",
     icon: "ShieldAlert",
     perm: "risk:view" as PermissionKey,
   },
   {
-    path: "/risk-dashboard",
-    label: "nav.riskDashboard",
-    icon: "TrendingDown",
+    path: "/risk",
+    label: "nav.risk",
+    icon: "Activity",
     perm: "risk:view" as PermissionKey,
   },
-  {
-    path: "/kyc-review",
-    label: "nav.kycReview",
-    icon: "FileSearch",
-    perm: "user:view" as PermissionKey,
-  },
-  {
-    path: "/large-withdrawal-review",
-    label: "nav.withdrawalReview",
-    icon: "ShieldCheck",
-    perm: "finance:approve" as PermissionKey,
-  },
-  {
-    group: "finance",
-    label: "nav.financeGroup",
-    icon: "Wallet",
-    children: [
-      {
-        path: "/deposits",
-        label: "nav.deposits",
-        icon: "CircleDollarSign",
-        perm: "finance:view" as PermissionKey,
-      },
-      {
-        path: "/c2c",
-        label: "nav.c2c",
-        icon: "TrendingUp",
-        perm: "c2c:view" as PermissionKey,
-      },
-    ],
-  },
+
+  // ── 用户 ──────────────────────────────────────────────────────────────────
   {
     group: "users",
     label: "nav.usersGroup",
@@ -109,18 +101,59 @@ const MENU_ITEMS: MenuItem[] = [
         perm: "user:view" as PermissionKey,
       },
       {
-        path: "/deposit-addresses",
-        label: "nav.depositAddresses",
-        icon: "LinkIcon",
+        path: "/kyc-review",
+        label: "nav.kycReview",
+        icon: "FileSearch",
         perm: "user:view" as PermissionKey,
       },
     ],
   },
+
+  // ── 资金 ──────────────────────────────────────────────────────────────────
+  {
+    group: "finance",
+    label: "nav.financeGroup",
+    icon: "Wallet",
+    children: [
+      {
+        path: "/deposits",
+        label: "nav.deposits",
+        icon: "CircleDollarSign",
+        perm: "finance:view" as PermissionKey,
+      },
+      {
+        path: "/large-withdrawal-review",
+        label: "nav.withdrawalReview",
+        icon: "ShieldCheck",
+        perm: "finance:approve" as PermissionKey,
+      },
+      {
+        path: "/c2c",
+        label: "nav.c2c",
+        icon: "ArrowLeftRight",
+        perm: "c2c:view" as PermissionKey,
+      },
+      {
+        path: "/deposit-addresses",
+        label: "nav.depositAddresses",
+        icon: "Link",
+        perm: "user:view" as PermissionKey,
+      },
+    ],
+  },
+
+  // ── 交易 ──────────────────────────────────────────────────────────────────
   {
     group: "trade",
     label: "nav.tradeGroup",
     icon: "Scale",
     children: [
+      {
+        path: "/orders",
+        label: "nav.orders",
+        icon: "FileText",
+        perm: "trade:view" as PermissionKey,
+      },
       {
         path: "/symbols",
         label: "nav.symbols",
@@ -136,17 +169,13 @@ const MENU_ITEMS: MenuItem[] = [
       {
         path: "/chains",
         label: "nav.chains",
-        icon: "LinkIcon",
+        icon: "Link",
         perm: "system:config" as PermissionKey,
-      },
-      {
-        path: "/orders",
-        label: "nav.orders",
-        icon: "FileText",
-        perm: "trade:view" as PermissionKey,
       },
     ],
   },
+
+  // ── 系统 ──────────────────────────────────────────────────────────────────
   {
     group: "system",
     label: "nav.systemGroup",
@@ -165,6 +194,27 @@ const MENU_ITEMS: MenuItem[] = [
         perm: "role:manage" as PermissionKey,
       },
       {
+        path: "/apikeys",
+        label: "nav.apikeys",
+        icon: "KeyRound",
+        perm: "apikey:view" as PermissionKey,
+      },
+      {
+        path: "/audit",
+        label: "nav.audit",
+        icon: "FileSearch",
+        perm: "audit:view" as PermissionKey,
+      },
+    ],
+  },
+
+  // ── 运营工具 ───────────────────────────────────────────────────────────────
+  {
+    group: "tools",
+    label: "nav.toolsGroup",
+    icon: "Tool",
+    children: [
+      {
         path: "/announcements",
         label: "nav.announcements",
         icon: "Megaphone",
@@ -175,12 +225,6 @@ const MENU_ITEMS: MenuItem[] = [
         label: "nav.notifications",
         icon: "Bell",
         perm: "notification:write" as PermissionKey,
-      },
-      {
-        path: "/apikeys",
-        label: "nav.apikeys",
-        icon: "Key",
-        perm: "apikey:view" as PermissionKey,
       },
       {
         path: "/lending",
@@ -195,21 +239,17 @@ const MENU_ITEMS: MenuItem[] = [
       {
         path: "/referral",
         label: "nav.referral",
-        icon: "Users",
-      },
-      {
-        path: "/settings",
-        label: "nav.settings",
-        icon: "Settings",
-        perm: "sys:settings" as PermissionKey,
+        icon: "Gift",
       },
     ],
   },
+
+  // ── 个人设置 ───────────────────────────────────────────────────────────────
   {
-    path: "/audit",
-    label: "nav.audit",
-    icon: "FileText",
-    perm: "audit:view" as PermissionKey,
+    path: "/settings",
+    label: "nav.settings",
+    icon: "Settings",
+    perm: "sys:settings" as PermissionKey,
   },
 ];
 
@@ -293,7 +333,7 @@ export function Sidebar() {
     setMounted(true);
     // 确保所有分组默认展开（即使 localStorage 有旧状态）
     const { expandedGroups } = useGlobalStore.getState();
-    const groups = ["finance", "users", "trade", "system"];
+    const groups = ["finance", "users", "trade", "system", "tools"];
     const toExpand = groups.filter((g) => !expandedGroups[g]);
     if (toExpand.length > 0) {
       const { toggleGroup } = useGlobalStore.getState();
