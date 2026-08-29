@@ -43,8 +43,8 @@ export type AlertLevel = "critical" | "warning" | "info";
 export interface RiskAlert {
   id: string;
   level: AlertLevel;
-  title: string;
-  description: string;
+  titleKey: string;
+  descKey: string;
   user_id?: number;
   amount?: number;
   coin?: string;
@@ -54,26 +54,26 @@ export interface RiskAlert {
   handled?: boolean;
 }
 
-// ─── 模拟风控告警模板 ──────────────────────────────────────────────────────────
+// ─── 模拟风控告警模板（i18n key，渲染时 t() 解析）──────────────────────────────
 const CRITICAL_TEMPLATES = [
-  { title: "大额提现拦截", desc: "用户提现已触发大额风控拦截，等待人工复核" },
-  { title: "对敲刷单检测", desc: "两账户异常对称交易，疑似对敲刷单行为" },
-  { title: "异常跨国 IP 登录", desc: "用户从非常见国家 IP 登录，且 2 小时内跨时区移动" },
-  { title: "疑似洗钱地址", desc: "提币地址进入黑名单，交易模式符合分层清洗特征" },
-  { title: "高频撤单异常", desc: "单用户 5 分钟内撤单超过 200 笔，疑似幌骗" },
+  { titleKey: "riskdash.tpl.withdrawIntercept.title", descKey: "riskdash.tpl.withdrawIntercept.desc" },
+  { titleKey: "riskdash.tpl.washTrading.title", descKey: "riskdash.tpl.washTrading.desc" },
+  { titleKey: "riskdash.tpl.crossBorderIp.title", descKey: "riskdash.tpl.crossBorderIp.desc" },
+  { titleKey: "riskdash.tpl.moneyLaundering.title", descKey: "riskdash.tpl.moneyLaundering.desc" },
+  { titleKey: "riskdash.tpl.highFreqCancel.title", descKey: "riskdash.tpl.highFreqCancel.desc" },
 ];
 
 const WARNING_TEMPLATES = [
-  { title: "频繁密码错误", desc: "近 30 分钟输错密码超过 10 次，可能遭受撞库攻击" },
-  { title: "大额划转预警", desc: "用户内部账户间大额资产划转，触发反洗钱模型" },
-  { title: "新设备登录", desc: "用户首次在陌生设备登录，建议确认身份" },
-  { title: "IP 代理特征", desc: "登录 IP 疑似使用 VPN/代理，风险评分上升" },
+  { titleKey: "riskdash.tpl.passwordErrors.title", descKey: "riskdash.tpl.passwordErrors.desc" },
+  { titleKey: "riskdash.tpl.largeTransfer.title", descKey: "riskdash.tpl.largeTransfer.desc" },
+  { titleKey: "riskdash.tpl.newDevice.title", descKey: "riskdash.tpl.newDevice.desc" },
+  { titleKey: "riskdash.tpl.proxyIp.title", descKey: "riskdash.tpl.proxyIp.desc" },
 ];
 
 const INFO_TEMPLATES = [
-  { title: "KYC 二级审核通过", desc: "用户完成 KYC2，提升提现限额" },
-  { title: "新合约开户", desc: "用户首次开通合约交易权限" },
-  { title: "白名单地址新增", desc: "用户新增一个提币白名单地址" },
+  { titleKey: "riskdash.tpl.kyc2Pass.title", descKey: "riskdash.tpl.kyc2Pass.desc" },
+  { titleKey: "riskdash.tpl.newFutures.title", descKey: "riskdash.tpl.newFutures.desc" },
+  { titleKey: "riskdash.tpl.whitelistAddr.title", descKey: "riskdash.tpl.whitelistAddr.desc" },
 ];
 
 function pickTemplate(level: AlertLevel) {
@@ -115,8 +115,8 @@ function useRiskWebSocket(onAlert: (alert: RiskAlert) => void) {
       onAlert({
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         level,
-        title: tpl.title,
-        description: tpl.desc,
+        titleKey: tpl.titleKey,
+        descKey: tpl.descKey,
         user_id: tpl.user_id,
         amount: tpl.amount,
         coin: tpl.coin,
@@ -241,15 +241,15 @@ function LegacyAlertCard({
         )}
       </div>
       <div>
-        <p className="text-sm font-semibold leading-snug">{alert.title}</p>
-        <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{alert.description}</p>
+        <p className="text-sm font-semibold leading-snug">{t(alert.titleKey)}</p>
+        <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{t(alert.descKey)}</p>
       </div>
       {(alert.user_id || alert.amount) && (
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground num">
           {alert.user_id && <span>{t("col.userId")}: <span className="text-foreground font-medium">{alert.user_id}</span></span>}
           {alert.amount && <span>{alert.coin ?? "USDT"}: <span className="text-foreground font-medium">{alert.amount.toLocaleString()}</span></span>}
           {alert.ip && <span>IP: <span className="text-foreground font-medium">{alert.ip}</span></span>}
-          {alert.country && <span>地区: <span className="text-foreground font-medium">{alert.country}</span></span>}
+          {alert.country && <span>{t("riskdash.region")}: <span className="text-foreground font-medium">{alert.country}</span></span>}
         </div>
       )}
       <div className="flex items-center gap-1.5 pt-1">
@@ -349,7 +349,7 @@ function LogDrawer({
             <div className="space-y-1.5 text-[11px] font-mono text-muted-foreground">
               <p>[{formatDateTime(alert.occurred_at)}] risk_engine.alert_emit level={alert.level}</p>
               <p>[{formatDateTime(alert.occurred_at)}] uid={alert.user_id} score=0.{Math.floor(Math.random() * 900 + 100)}</p>
-              <p>[{formatDateTime(alert.occurred_at)}] rule_triggered: [{alert.title.replace(/"/g, '\\"')}]</p>
+              <p>[{formatDateTime(alert.occurred_at)}] rule_triggered: [{t(alert.titleKey).replace(/"/g, '\\"')}]</p>
               {alert.amount && <p>[{formatDateTime(alert.occurred_at)}] amount={alert.amount} coin={alert.coin}</p>}
               <p>[{formatDateTime(alert.occurred_at)}] model.confidence={(Math.random() * 0.3 + 0.7).toFixed(3)}</p>
             </div>
@@ -384,13 +384,13 @@ export function RiskDashboard() {
   }), [data]);
 
   const handleFreeze = (userId: number) => {
-    setToast(`已触发用户 #${userId} 冻结流程（需 withdraw:approval 权限）`);
+    setToast(t("riskdash.toast.freeze", { userId }));
     setTimeout(() => setToast(null), 3000);
   };
 
   const handleMarkHandled = (id: string) => {
     setAlerts((prev) => prev.map((a) => a.id === id ? { ...a, handled: true } : a));
-    setToast("已标记为已处理");
+    setToast(t("riskdash.toast.handled"));
     setTimeout(() => setToast(null), 2000);
   };
 
@@ -398,10 +398,10 @@ export function RiskDashboard() {
     setAlerts((prev) => prev.filter((a) => a.id !== id));
   };
 
-  const handleSpikeClick = (spike: { idx: number; ts: string; label: string; deposit: number; withdrawal: number }) => {
+  const handleSpikeClick = (spike: { idx: number; ts: string; labelKey: string; deposit: number; withdrawal: number }) => {
     setDrillParams({
       type: "spike",
-      label: spike.label,
+      label: spike.labelKey,
       timeRange: `${spike.ts}`,
     });
   };
@@ -409,7 +409,7 @@ export function RiskDashboard() {
   const handleSymbolClick = (symbol: string) => {
     setDrillParams({
       type: "symbol",
-      label: `${symbol} 爆仓明细`,
+      label: "riskdash.liquidationDetail",
       symbol,
     });
   };
