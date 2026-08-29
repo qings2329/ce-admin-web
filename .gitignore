@@ -55,3 +55,4 @@ Thumbs.db
 
 # local generated
 *.tsbuildinfo
+configs/

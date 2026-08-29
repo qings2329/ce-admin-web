@@ -285,6 +285,16 @@ export const api = {
   listLendingBorrows: () =>
     request<{ borrows: any[] }>("/api/admin/lending/borrows"),
 
+  // ---- 理财管理（代理 wealth 服务） ----
+  listWealthProducts: () =>
+    request<{ products: any[] }>("/api/admin/wealth/products"),
+  createWealthProduct: (data: Record<string, any>) =>
+    request<{ product: any }>("/api/admin/wealth/products", { method: "POST", body: JSON.stringify(data) }),
+  listWealthHoldings: () =>
+    request<{ holdings: any[] }>("/api/admin/wealth/holdings"),
+  accrueWealth: () =>
+    request<{ accrued: number }>("/api/admin/wealth/holdings/accrue", { method: "POST" }),
+
   // ---- 交易机器人管理（代理 bot 服务） ----
   listBotStrategies: () =>
     request<{ strategies: any[] }>("/api/admin/bot/strategies"),
