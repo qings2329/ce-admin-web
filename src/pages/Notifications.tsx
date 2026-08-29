@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Loader2 } from "lucide-react";
 import { useI18n } from "../i18n";
 import { formatDateTime } from "../lib/timezone";
 import { api } from "../api/client";
@@ -29,6 +29,7 @@ export function Notifications() {
   const { items, total, limit, page, loading, error, reload, changePage, changeLimit } = usePaged(
     (p) => api.listNotifications(p).then((d) => ({ items: d.items ?? [], total: d.total ?? 0 })),
   );
+  const [submitting, setSubmitting] = useState(false);
   const [level, setLevel] = useState<string>("info");
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -41,6 +42,7 @@ export function Notifications() {
       setMsg(t("ntf.titleRequired"));
       return;
     }
+    setSubmitting(true);
     try {
       await api.createNotification({ level, title, body });
       setTitle("");
@@ -48,6 +50,8 @@ export function Notifications() {
       reload();
     } catch (e: any) {
       setMsg(e?.message ?? t("common.saveFailed"));
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -75,8 +79,16 @@ export function Notifications() {
           ))}
         </Select>
         <Input placeholder={t("ntf.titlePh")} value={title} onChange={(e) => setTitle(e.target.value)} />
-        <Input placeholder={t("ntf.bodyPh")} value={body} onChange={(e) => setBody(e.target.value)} />
-        <Button type="submit">{t("ntf.publishBtn")}</Button>
+        <textarea
+          placeholder={t("ntf.bodyPh")}
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          className="rounded-md border border-border bg-transparent px-3 py-1.5 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[80px] resize-y w-full max-w-xs"
+        />
+        <Button type="submit" disabled={submitting} className="gap-1.5">
+          {submitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+          {t("ntf.publishBtn")}
+        </Button>
       </form>
 
       <ApiTable
