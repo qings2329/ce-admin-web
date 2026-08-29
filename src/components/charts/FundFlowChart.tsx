@@ -17,7 +17,7 @@ function generateFundFlow() {
   const withdrawal: number[] = [];
   let baseD = 500000;
   let baseW = 480000;
-  const spikes: { idx: number; ts: string; label: string }[] = [];
+  const spikes: { idx: number; ts: string; labelKey: string }[] = [];
 
   for (let i = 0; i < points; i++) {
     const t = new Date(now - (points - i) * 5 * 60 * 1000);
@@ -29,8 +29,8 @@ function generateFundFlow() {
     withdrawal.push(parseFloat(w.toFixed(0)));
 
     if (Math.random() < 0.015 && spikes.length < 3) {
-      const labels = ["大额提现异常", "充值高峰", "批量划转"];
-      spikes.push({ idx: i, ts: t.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" }), label: labels[spikes.length % 3] });
+      const labelKeys = ["riskdash.spike.withdrawAnomaly", "riskdash.spike.depositPeak", "riskdash.spike.batchTransfer"];
+      spikes.push({ idx: i, ts: t.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" }), labelKey: labelKeys[spikes.length % 3] });
       deposit[i] = parseFloat((deposit[i] * (1.5 + Math.random())).toFixed(0));
       withdrawal[i] = parseFloat((withdrawal[i] * (1.8 + Math.random())).toFixed(0));
     }
@@ -47,7 +47,7 @@ function generateFundFlow() {
 }
 
 interface FundFlowChartProps {
-  onSpikeClick?: (spike: { idx: number; ts: string; label: string; deposit: number; withdrawal: number }) => void;
+  onSpikeClick?: (spike: { idx: number; ts: string; labelKey: string; deposit: number; withdrawal: number }) => void;
 }
 
 export function FundFlowChart({ onSpikeClick }: FundFlowChartProps) {
@@ -64,7 +64,7 @@ export function FundFlowChart({ onSpikeClick }: FundFlowChartProps) {
         onSpikeClick?.({
           idx: spike.idx,
           ts: spike.ts,
-          label: spike.label,
+          labelKey: spike.labelKey,
           deposit: flowData.deposit[spike.idx],
           withdrawal: flowData.withdrawal[spike.idx],
         });

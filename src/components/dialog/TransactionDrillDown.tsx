@@ -93,7 +93,7 @@ export function TransactionDrillDown({ params, onClose }: TransactionDrillDownPr
             <div>
               <CardTitle className="text-sm">{t("riskdash.drill.title")}</CardTitle>
               <p className="text-[11px] text-muted-foreground mt-0.5">
-                {params.label}
+                {t(params.label, params.symbol ? { symbol: params.symbol } : undefined)}
                 {params.timeRange && ` · ${params.timeRange}`}
                 {params.symbol && ` · ${params.symbol}`}
               </p>
