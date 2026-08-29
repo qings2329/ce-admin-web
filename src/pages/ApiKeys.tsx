@@ -12,6 +12,8 @@ import { Input } from "../components/ui/input";
 import { StatusBadge } from "../components/ui/status-badge";
 import { DestructiveActionGuard } from "../components/ui/DestructiveActionGuard";
 import { Alert } from "../components/ui/alert";
+import { CopyButton } from "../components/ui/CopyButton";
+import { Loader2 } from "lucide-react";
 
 function fmtTime(t: any): string {
   return formatDateTime(t);
@@ -225,7 +227,8 @@ export function ApiKeys() {
                 value={scopes}
                 onChange={(e) => setScopes(e.target.value)}
               />
-              <Button type="submit" disabled={creating}>
+              <Button type="submit" disabled={creating} className="gap-1.5">
+                {creating && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                 {creating ? t('apikeys.issuing') : t('apikeys.issueBtn')}
               </Button>
             </form>
@@ -249,9 +252,10 @@ export function ApiKeys() {
               </Button>
             </div>
             <Alert variant="warn">{t('apikeys.plaintextHint')}</Alert>
-            <pre className="rounded-md border border-border bg-background p-3 font-mono text-xs num whitespace-pre-wrap break-all">
-              {createdKey}
-            </pre>
+            <div className="flex items-start gap-2 rounded-md border border-border bg-background p-3">
+              <pre className="flex-1 font-mono text-xs num whitespace-pre-wrap break-all">{createdKey}</pre>
+              <CopyButton value={createdKey} />
+            </div>
           </div>
         </div>
       )}

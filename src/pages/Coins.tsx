@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Loader2 } from "lucide-react";
 import { api } from "../api/client";
 import { usePaged } from "../lib/usePaged";
 import { ApiTable } from "../components/ApiTable";
@@ -13,6 +14,7 @@ export function Coins() {
   const { t } = useI18n();
   const { items, total, limit, page, loading, error, reload, changePage, changeLimit } =
     usePaged((p) => api.listCoins(p));
+  const [creating, setCreating] = useState(false);
   const [symbol, setSymbol] = useState("");
   const [name, setName] = useState("");
   const [chain, setChain] = useState("");
@@ -23,6 +25,27 @@ export function Coins() {
   const create = async (e: React.FormEvent) => {
     e.preventDefault();
     setMsg(null);
+    if (!symbol.trim()) {
+      setMsg(t('coins.pleaseSymbol'));
+      return;
+    }
+    if (!name.trim()) {
+      setMsg(t('coins.pleaseName'));
+      return;
+    }
+    if (!chain.trim()) {
+      setMsg(t('coins.pleaseChain'));
+      return;
+    }
+    if (parseInt(precision, 10) < 1) {
+      setMsg(t('coins.invalidPrecision'));
+      return;
+    }
+    if (parseFloat(fee) < 0) {
+      setMsg(t('coins.invalidFee'));
+      return;
+    }
+    setCreating(true);
     try {
       await api.createCoin({
         symbol,
@@ -37,6 +60,8 @@ export function Coins() {
       reload();
     } catch (e: any) {
       setMsg(e?.message ?? t('common.createFailed'));
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -52,7 +77,8 @@ export function Coins() {
         <Input placeholder={t('coins.chainPh')} value={chain} onChange={(e) => setChain(e.target.value)} />
         <Input placeholder={t('coins.precisionPh')} value={precision} onChange={(e) => setPrecision(e.target.value)} type="number" />
         <Input placeholder={t('coins.feePh')} value={fee} onChange={(e) => setFee(e.target.value)} type="number" step="0.0001" />
-        <Button type="submit">
+        <Button type="submit" disabled={creating} className="gap-1.5">
+          {creating && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
           {t('coins.create')}
         </Button>
       </form>

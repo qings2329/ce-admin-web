@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Loader2 } from "lucide-react";
 import { api } from "../api/client";
 import { useFetch } from "../lib/useFetch";
 import { usePaged } from "../lib/usePaged";
@@ -13,6 +13,7 @@ import { Select } from "../components/ui/select";
 import { StatusBadge } from "../components/ui/status-badge";
 import { Alert } from "../components/ui/alert";
 import { DestructiveActionGuard } from "../components/ui/DestructiveActionGuard";
+import { PasswordField } from "../components/ui/PasswordField";
 
 export function Admins() {
   const { t } = useI18n();
@@ -26,17 +27,31 @@ export function Admins() {
   const [password, setPassword] = useState("");
   const [roleId, setRoleId] = useState<string>("");
   const [editTarget, setEditTarget] = useState<{ id: number; roleId: string } | null>(null);
+  const [resetTarget, setResetTarget] = useState<{ id: number; username: string } | null>(null);
+  const [resetPwd, setResetPwd] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [savingRole, setSavingRole] = useState(false);
+  const [resetting, setResetting] = useState(false);
 
   const roles = (rolesFetch.data?.items ?? []) as any[];
 
   const create = async (e: React.FormEvent) => {
     e.preventDefault();
     setMsg(null);
+    if (!username.trim()) {
+      setMsg(t('admins.usernameRequired'));
+      return;
+    }
+    if (!password) {
+      setMsg(t('admins.pwdRequired'));
+      return;
+    }
     if (roleId === "") {
       setMsg(t('admins.pleaseSelectRole'));
       return;
     }
+    setCreating(true);
     try {
       await api.createAdmin({ username, password, role_id: Number(roleId) });
       setUsername("");
@@ -45,6 +60,8 @@ export function Admins() {
       reload();
     } catch (e: any) {
       setMsg(e?.message ?? t('common.createFailed'));
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -64,22 +81,27 @@ export function Admins() {
       setMsg(e?.message ?? t('common.opFailed'));
     }
   };
-  const reset = async (id: number) => {
-    const pw = window.prompt(t('admins.pwdPrompt'));
-    if (!pw) return;
+  const doResetPwd = async () => {
+    if (!resetTarget || !resetPwd) return;
+    setResetting(true);
+    setMsg(null);
     try {
-      await api.resetAdminPassword(id, pw);
+      await api.resetAdminPassword(resetTarget.id, resetPwd);
       setMsg(t('admins.pwdResetDone'));
+      setResetTarget(null);
+      setResetPwd("");
       reload();
     } catch (e: any) {
       setMsg(e?.message ?? t('common.opFailed'));
+    } finally {
+      setResetting(false);
     }
   };
 
-  // 改派已有管理员的角色（后端 updateAdmin 支持 role_id 改派）。
   const saveRole = async () => {
     if (!editTarget) return;
     setMsg(null);
+    setSavingRole(true);
     try {
       await api.updateAdmin(editTarget.id, { role_id: Number(editTarget.roleId) });
       setMsg(t('admins.roleUpdated'));
@@ -87,6 +109,8 @@ export function Admins() {
       reload();
     } catch (e: any) {
       setMsg(e?.message ?? t('common.opFailed'));
+    } finally {
+      setSavingRole(false);
     }
   };
 
@@ -120,7 +144,10 @@ export function Admins() {
             </option>
           ))}
         </Select>
-        <Button type="submit">{t('admins.create')}</Button>
+        <Button type="submit" disabled={creating} className="gap-1.5">
+          {creating && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+          {t('admins.create')}
+        </Button>
         <span className="text-xs text-muted-foreground">{t('admins.pendingHint')}</span>
       </form>
 
@@ -174,7 +201,7 @@ export function Admins() {
                     }
                   />
                 )}
-                <Button variant="outline" onClick={() => reset(row.id)}>
+                <Button variant="outline" onClick={() => setResetTarget({ id: row.id, username: row.username })}>
                   {t('admins.resetPwd')}
                 </Button>
                 <Button
@@ -189,6 +216,7 @@ export function Admins() {
         ]}
       />
 
+      {/* 改派角色弹窗 */}
       {editTarget != null && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/55"
@@ -216,9 +244,55 @@ export function Admins() {
                   </option>
                 ))}
               </Select>
-              <Button disabled={!editTarget.roleId} onClick={saveRole}>
+              <Button disabled={!editTarget.roleId || savingRole} onClick={saveRole} className="gap-1.5">
+                {savingRole && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                 {t('admins.save')}
               </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 重置密码弹窗 */}
+      {resetTarget != null && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/55"
+          onClick={() => setResetTarget(null)}
+        >
+          <div
+            className="rounded-xl border border-border bg-card p-4 w-[min(480px,92vw)]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <h2 className="text-base font-semibold">{t('admins.resetPwdTitle', { username: resetTarget.username })}</h2>
+              <Button variant="ghost" onClick={() => setResetTarget(null)}>
+                {t('common.close')}
+              </Button>
+            </div>
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">{t('admins.resetPwdHint')}</p>
+              <PasswordField
+                label={t('settings.newPwd')}
+                placeholder={t('admins.newPwdPh')}
+                value={resetPwd}
+                onChange={(e) => setResetPwd(e.target.value)}
+                showStrength
+                disabled={resetting}
+              />
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setResetTarget(null)} disabled={resetting}>
+                  {t('common.cancel')}
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={doResetPwd}
+                  disabled={resetting || !resetPwd}
+                  className="gap-1.5"
+                >
+                  {resetting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                  {t('admins.resetPwd')}
+                </Button>
+              </div>
             </div>
           </div>
         </div>

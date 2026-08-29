@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Loader2 } from "lucide-react";
 import { api } from "../api/client";
 import { useFetch } from "../lib/useFetch";
 import { usePaged } from "../lib/usePaged";
@@ -21,6 +21,9 @@ export function Roles() {
   const rolesFetch = usePaged((p) => api.listRoles(p));
   const permsFetch = useFetch(api.listPermissions);
 
+  const [creating, setCreating] = useState(false);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [savingPerms, setSavingPerms] = useState(false);
   const [name, setName] = useState("");
   const [desc, setDesc] = useState("");
   const [selected, setSelected] = useState<number | null>(null);
@@ -48,10 +51,15 @@ export function Roles() {
   const create = async (e: React.FormEvent) => {
     e.preventDefault();
     setMsg(null);
-    if (!name) {
+    if (!name.trim()) {
       setMsg(t('roles.pleaseName'));
       return;
     }
+    if (!desc.trim()) {
+      setMsg(t('roles.pleaseDesc'));
+      return;
+    }
+    setCreating(true);
     try {
       await api.createRole({ name, description: desc });
       setName("");
@@ -59,6 +67,8 @@ export function Roles() {
       rolesFetch.reload();
     } catch (e: any) {
       setMsg(e?.message ?? t('common.createFailed'));
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -66,12 +76,15 @@ export function Roles() {
     if (selected == null) return;
     setMsg(null);
     const list = Object.keys(checked).filter((k) => checked[k]);
+    setSavingPerms(true);
     try {
       await api.setRolePermissions(selected, list);
       rolesFetch.reload();
       setMsg(t('roles.permSaved'));
     } catch (e: any) {
       setMsg(e?.message ?? t('common.saveFailed'));
+    } finally {
+      setSavingPerms(false);
     }
   };
 
@@ -89,6 +102,7 @@ export function Roles() {
   const saveRoleMeta = async () => {
     if (!editTarget || !editTarget.name) return;
     setMsg(null);
+    setSavingEdit(true);
     try {
       await api.updateRole(editTarget.id, {
         name: editTarget.name,
@@ -99,6 +113,8 @@ export function Roles() {
       rolesFetch.reload();
     } catch (e: any) {
       setMsg(e?.message ?? t('common.opFailed'));
+    } finally {
+      setSavingEdit(false);
     }
   };
 
@@ -119,7 +135,10 @@ export function Roles() {
       <form className="flex flex-wrap items-center gap-2 mb-3" onSubmit={create}>
         <Input placeholder={t('roles.namePh')} value={name} onChange={(e) => setName(e.target.value)} />
         <Input placeholder={t('roles.descPh')} value={desc} onChange={(e) => setDesc(e.target.value)} />
-        <Button type="submit">{t('roles.create')}</Button>
+        <Button type="submit" disabled={creating} className="gap-1.5">
+          {creating && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+          {t('roles.create')}
+        </Button>
       </form>
 
       <ApiTable
@@ -184,7 +203,10 @@ export function Roles() {
         <Card>
           <CardHeader>
             <CardTitle>{t('roles.assignTitle', { id: selected })}</CardTitle>
-            <Button onClick={savePerms}>{t('roles.savePerms')}</Button>
+            <Button onClick={savePerms} disabled={savingPerms} className="gap-1.5">
+              {savingPerms && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              {t('roles.savePerms')}
+            </Button>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -246,7 +268,8 @@ export function Roles() {
                 value={editTarget.description}
                 onChange={(e) => setEditTarget({ ...editTarget, description: e.target.value })}
               />
-              <Button type="submit" disabled={!editTarget.name}>
+              <Button type="submit" disabled={!editTarget.name || savingEdit} className="gap-1.5">
+                {savingEdit && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                 {t('roles.save')}
               </Button>
             </form>

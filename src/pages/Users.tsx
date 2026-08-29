@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Search, AlertTriangle } from "lucide-react";
+import { Search, AlertTriangle, Loader2 } from "lucide-react";
 import { api } from "../api/client";
 import { usePaged } from "../lib/usePaged";
 import { ApiTable } from "../components/ApiTable";
@@ -21,6 +21,7 @@ export function Users() {
   qRef.current = q;
   const { items, total, limit, page, loading, error, reload, changePage, changeLimit } =
     usePaged((p) => api.listUsers({ ...p, q: qRef.current || undefined }));
+  const [creating, setCreating] = useState(false);
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -43,6 +44,23 @@ export function Users() {
   const create = async (e: React.FormEvent) => {
     e.preventDefault();
     setMsg(null);
+    if (!username.trim()) {
+      setMsg(t('users.pleaseUsername'));
+      return;
+    }
+    if (!email.trim()) {
+      setMsg(t('users.pleaseEmail'));
+      return;
+    }
+    if (!password.trim() || password.length < 6) {
+      setMsg(t('users.pleasePassword'));
+      return;
+    }
+    if (parseFloat(balance) < 0) {
+      setMsg(t('users.invalidBalance'));
+      return;
+    }
+    setCreating(true);
     try {
       await api.createUser({
         username,
@@ -59,6 +77,8 @@ export function Users() {
       reload();
     } catch (e: any) {
       setMsg(e?.message ?? t('common.createFailed'));
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -115,7 +135,8 @@ export function Users() {
           onChange={(e) => setBalance(e.target.value)}
           type="number"
         />
-        <Button type="submit">
+        <Button type="submit" disabled={creating} className="gap-1.5">
+          {creating && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
           {t('users.create')}
         </Button>
       </form>

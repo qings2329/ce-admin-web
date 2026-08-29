@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Loader2 } from "lucide-react";
 import { api } from "../api/client";
 import { usePaged } from "../lib/usePaged";
 import { ApiTable } from "../components/ApiTable";
@@ -15,6 +15,7 @@ export function Chains() {
   const { t } = useI18n();
   const { items, total, limit, page, loading, error, reload, changePage, changeLimit } =
     usePaged((p) => api.listChains(p));
+  const [creating, setCreating] = useState(false);
   const [name, setName] = useState("");
   const [symbol, setSymbol] = useState("");
   const [confirmations, setConfirmations] = useState("3");
@@ -41,6 +42,19 @@ export function Chains() {
   const create = async (e: React.FormEvent) => {
     e.preventDefault();
     setMsg(null);
+    if (!name.trim()) {
+      setMsg(t('chains.pleaseName'));
+      return;
+    }
+    if (!symbol.trim()) {
+      setMsg(t('chains.pleaseSymbol'));
+      return;
+    }
+    if (parseInt(confirmations, 10) < 1) {
+      setMsg(t('chains.invalidConfirmations'));
+      return;
+    }
+    setCreating(true);
     try {
       await api.createChain({
         name,
@@ -54,6 +68,8 @@ export function Chains() {
       reload();
     } catch (e: any) {
       setMsg(e?.message ?? t('common.createFailed'));
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -67,7 +83,8 @@ export function Chains() {
         <Input placeholder={t('chains.namePh')} value={name} onChange={(e) => setName(e.target.value)} />
         <Input placeholder={t('chains.symbolPh')} value={symbol} onChange={(e) => setSymbol(e.target.value)} />
         <Input placeholder={t('chains.confirmationsPh')} value={confirmations} onChange={(e) => setConfirmations(e.target.value)} type="number" />
-        <Button type="submit">
+        <Button type="submit" disabled={creating} className="gap-1.5">
+          {creating && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
           {t('chains.create')}
         </Button>
       </form>
