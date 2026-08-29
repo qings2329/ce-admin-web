@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { AlertTriangle } from "lucide-react";
 import { api } from "../api/client";
 import { useAuth, hasPerm } from "../lib/auth";
 import { ApiTable } from "../components/ApiTable";
@@ -10,6 +11,7 @@ import { Input } from "../components/ui/input";
 import { Select } from "../components/ui/select";
 import { StatusBadge, type StatusTone } from "../components/ui/status-badge";
 import { Alert } from "../components/ui/alert";
+import { DestructiveActionGuard } from "../components/ui/DestructiveActionGuard";
 import { Card } from "../components/ui/card";
 
 const MARKETS = ["", "spot", "futures"];
@@ -69,7 +71,7 @@ function orderStatusTone(s: string): StatusTone {
 export function Orders() {
   const { perms } = useAuth();
   const { t } = useI18n();
-  const canRead = hasPerm(perms, "trade:read");
+  const canRead = hasPerm(perms, "trade:view");
   const canManage = hasPerm(perms, "trade:manage");
 
   const [tab, setTab] = useState<"orders" | "trades">("orders");
@@ -124,6 +126,26 @@ export function Orders() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, page, limit]);
 
+  // 支持 Command Palette 深度链接：#/orders?user_id= 或 ?q= 预填并强查
+  useEffect(() => {
+    const sp = new URLSearchParams(location.hash.split("?")[1] ?? "");
+    const target = sp.get("user_id") || sp.get("q");
+    if (!target || !canRead) return;
+    setUserId(target);
+    setPage(1);
+    setLoading(true);
+    setError(null);
+    api
+      .listOrders({ limit, offset: 0, user_id: target })
+      .then((r) => {
+        setRows(r.orders ?? []);
+        setTotal(r.total ?? 0);
+      })
+      .catch((e: any) => setError(e?.message ?? t("common.queryFailed")))
+      .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const openDetail = async (id: number) => {
     setDetailLoading(true);
     setDetail(null);
@@ -139,8 +161,6 @@ export function Orders() {
 
   const cancel = async (row: any) => {
     if (!canManage) return;
-    if (!confirm(t("orders.cancelConfirm", { uid: row.user_id, id: row.id, symbol: row.symbol })))
-      return;
     setMsg(null);
     try {
       const r = await api.cancelOrder(row.id, row.symbol);
@@ -264,9 +284,19 @@ export function Orders() {
                 <span className="flex flex-wrap items-center gap-2">
                   <Button onClick={() => openDetail(row.id)}>{t("orders.detail")}</Button>
                   {canManage && (row.status === "open" || row.status === "partial") && (
-                    <Button variant="destructive" onClick={() => cancel(row)}>
-                      {t("orders.cancel")}
-                    </Button>
+                    <DestructiveActionGuard
+                      confirmText={String(row.id)}
+                      confirmLabel={t("orders.cancel")}
+                      onConfirm={async () => {
+                        await cancel(row);
+                      }}
+                      trigger={
+                        <Button variant="destructive" className="border-dashed">
+                          <AlertTriangle className="h-3.5 w-3.5" />
+                          {t("orders.cancel")}
+                        </Button>
+                      }
+                    />
                   )}
                 </span>
               ),

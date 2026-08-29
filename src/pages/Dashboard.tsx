@@ -18,6 +18,7 @@ import {
 import { StatusBadge } from "../components/ui/status-badge";
 import { Alert } from "../components/ui/alert";
 import { Button } from "../components/ui/button";
+import { MaskedText, maskHash } from "../lib/mask";
 
 function Kv({ k, v, hint }: { k: string; v: string; hint?: string }) {
   return (
@@ -113,8 +114,8 @@ export function Dashboard() {
                     <TableCell className="num">{w.id}</TableCell>
                     <TableCell className="num">{w.user_id}</TableCell>
                     <TableCell>{w.coin}</TableCell>
-                    <TableCell className="num">{w.amount}</TableCell>
-                    <TableCell className="num">{w.address}</TableCell>
+                    <TableCell className="num"><MaskedText value={w.amount} mask="balance" /></TableCell>
+                    <TableCell className="num"><MaskedText value={w.address} mask={maskHash} /></TableCell>
                   </TableRow>
                 ))}
               </TableBody>

@@ -14,6 +14,7 @@ import {
   TableCell,
 } from "../ui/table";
 import { Alert } from "../ui/alert";
+import { MaskedText, maskHash } from "../../lib/mask";
 import { X, Loader2, Search, ArrowLeft } from "lucide-react";
 
 interface DrillDownParams {
@@ -143,8 +144,8 @@ export function TransactionDrillDown({ params, onClose }: TransactionDrillDownPr
                     <TableCell className="num font-medium">{row.id}</TableCell>
                     <TableCell className="num text-muted-foreground">{row.user_id}</TableCell>
                     <TableCell><Badge variant="secondary" className="text-[10px]">{row.coin}</Badge></TableCell>
-                    <TableCell className="num font-semibold">${row.amount.toLocaleString()}</TableCell>
-                    <TableCell className="num text-muted-foreground text-[11px] max-w-[140px] truncate">{row.tx_hash}</TableCell>
+                    <TableCell className="num font-semibold"><MaskedText value={`$${row.amount.toLocaleString()}`} mask="balance" /></TableCell>
+                    <TableCell className="num text-muted-foreground text-[11px] max-w-[140px] truncate"><MaskedText value={row.tx_hash} mask={maskHash} /></TableCell>
                     <TableCell>
                       <StatusBadge tone={row.status === "completed" || row.status === "approved" ? "success" : row.status === "pending" ? "warning" : "danger"}>
                         {row.status}

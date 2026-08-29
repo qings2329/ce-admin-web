@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Search, AlertTriangle } from "lucide-react";
 import { api } from "../api/client";
 import { usePaged } from "../lib/usePaged";
 import { ApiTable } from "../components/ApiTable";
@@ -8,12 +9,18 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Alert } from "../components/ui/alert";
 import { StatusBadge } from "../components/ui/status-badge";
+import { DestructiveActionGuard } from "../components/ui/DestructiveActionGuard";
 import { ReviewDrawer, type ReviewItem } from "../components/drawer/ReviewDrawer";
+import { routeParam } from "../lib/routeQuery";
+import { MaskedText, maskEmail } from "../lib/mask";
 
 export function Users() {
   const { t } = useI18n();
+  const [q, setQ] = useState<string>(() => routeParam("q"));
+  const qRef = useRef(q);
+  qRef.current = q;
   const { items, total, limit, page, loading, error, reload, changePage, changeLimit } =
-    usePaged((p) => api.listUsers(p));
+    usePaged((p) => api.listUsers({ ...p, q: qRef.current || undefined }));
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -67,6 +74,25 @@ export function Users() {
     setDrawerIndex(idx);
   };
 
+  // Command Palette 深度链接：#/users?q= 预填搜索
+  useEffect(() => {
+    const apply = (v: string) => {
+      if (!v) return;
+      qRef.current = v;
+      setQ(v);
+      reload();
+    };
+    const init = routeParam("q");
+    if (init) apply(init);
+    const on = () => {
+      const v = routeParam("q");
+      if (v) apply(v);
+    };
+    window.addEventListener("hashchange", on);
+    return () => window.removeEventListener("hashchange", on);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div className="space-y-3">
       <h1 className="mb-3 text-lg font-semibold text-foreground">{t('users.title')}</h1>
@@ -94,6 +120,40 @@ export function Users() {
         </Button>
       </form>
 
+      <form
+        className="mb-3 flex flex-wrap items-center gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          qRef.current = q;
+          reload();
+        }}
+      >
+        <Search className="h-3.5 w-3.5 text-muted-foreground" />
+        <Input
+          placeholder={t("search.lookupGroup")}
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          className="max-w-xs"
+        />
+        <Button type="submit" variant="outline" size="sm">
+          {t('common.query')}
+        </Button>
+        {q && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              qRef.current = "";
+              setQ("");
+              reload();
+            }}
+          >
+            ✕
+          </Button>
+        )}
+      </form>
+
       <ApiTable
         title={t('users.listTitle')}
         rows={items}
@@ -103,7 +163,11 @@ export function Users() {
         columns={[
           { key: "id", label: "ID", render: (row: any) => <span className="num">{row.id}</span> },
           { key: "username", label: t('col.username') },
-          { key: "email", label: t('col.email') },
+          {
+            key: "email",
+            label: t('col.email'),
+            render: (row: any) => <MaskedText value={row.email} mask={maskEmail} />,
+          },
           {
             key: "status",
             label: t('col.status'),
@@ -118,15 +182,31 @@ export function Users() {
             label: "KYC",
             render: (row: any) => <StatusBadge tone="neutral">{row.kyc}</StatusBadge>,
           },
-          { key: "balance", label: t('col.balance'), render: (row: any) => <span className="num">{row.balance}</span> },
+          { key: "balance", label: t('col.balance'), render: (row: any) => <span className="num"><MaskedText value={row.balance} mask="balance" /></span> },
           {
             key: "op",
             label: t('col.actions'),
             render: (row: any) => (
               <div className="flex items-center gap-1">
-                <Button size="sm" variant="outline" onClick={() => toggle(row.id, row.status === "active")}>
-                  {row.status === "active" ? t('users.freeze') : t('users.unfreeze')}
-                </Button>
+                {row.status === "active" ? (
+                  <DestructiveActionGuard
+                    confirmText={String(row.id)}
+                    description={t("users.freezeGuardDesc", { uid: row.id })}
+                    onConfirm={async () => {
+                      await toggle(row.id, true);
+                    }}
+                    trigger={
+                      <Button size="sm" variant="destructive" className="border-dashed">
+                        <AlertTriangle className="h-3.5 w-3.5" />
+                        {t('users.freeze')}
+                      </Button>
+                    }
+                  />
+                ) : (
+                  <Button size="sm" variant="outline" onClick={() => toggle(row.id, false)}>
+                    {t('users.unfreeze')}
+                  </Button>
+                )}
                 <Button size="sm" variant="ghost" onClick={() => openDrawer(items.findIndex((r: any) => r.id === row.id))}>
                   {t('users.reviewKyc')}
                 </Button>

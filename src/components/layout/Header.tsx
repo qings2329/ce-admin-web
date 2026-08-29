@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "../../lib/auth";
 import { useGlobalStore } from "../../store/useGlobalStore";
 import { useI18n } from "../../i18n";
@@ -11,11 +11,20 @@ import {
   LogOut,
   X,
   UserCircle,
+  Command,
+  FileText,
+  User as UserIcon,
+  Hash,
+  CornerDownLeft,
+  ArrowRight,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Badge } from "../ui/badge";
 import { Select } from "../ui/select";
+import { cn } from "../../lib/utils";
 
 type AlertLevel = "critical" | "warning" | "info";
 
@@ -31,14 +40,27 @@ const MOCK_ALERTS = [
   { id: 3, level: "info" as AlertLevel, msg: "系统对账完成，差异金额 0.00", time: "1 小时前" },
 ];
 
-// ─── 全局搜索弹窗 ─────────────────────────────────────────────────────────────
+// ─── 全局极速搜索（Command Palette：Cmd+K / Ctrl+K）──────────────────────────
+// 混合搜索：菜单/页面名称 + UID / 邮箱 / 手机 / TXID / 订单号，命中后直达目标页。
+
+type PaletteItem = {
+  id: string;
+  group: "page" | "user" | "order" | "lookup";
+  label: string;
+  hint: string;
+  path: string;
+};
+
 export function GlobalSearchModal() {
   const { t } = useI18n();
   const { searchOpen, searchQuery, closeSearch, setSearchQuery } = useGlobalStore();
   const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const [active, setActive] = useState(0);
 
   useEffect(() => {
     if (searchOpen) {
+      setActive(0);
       setTimeout(() => inputRef.current?.focus(), 50);
     }
   }, [searchOpen]);
@@ -55,35 +77,232 @@ export function GlobalSearchModal() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  // ── 页面索引（与 PAGES / 侧边栏菜单对齐）──
+  const pageIndex: { path: string; key: string }[] = [
+    { path: "/dashboard", key: "nav.dashboard" },
+    { path: "/risk", key: "nav.risk" },
+    { path: "/risk-dashboard", key: "nav.riskDashboard" },
+    { path: "/kyc-review", key: "nav.kycReview" },
+    { path: "/large-withdrawal-review", key: "nav.withdrawalReview" },
+    { path: "/deposits", key: "nav.deposits" },
+    { path: "/users", key: "nav.users" },
+    { path: "/deposit-addresses", key: "nav.depositAddresses" },
+    { path: "/orders", key: "nav.orders" },
+    { path: "/symbols", key: "nav.symbols" },
+    { path: "/coins", key: "nav.coins" },
+    { path: "/chains", key: "nav.chains" },
+    { path: "/c2c", key: "nav.c2c" },
+    { path: "/admins", key: "nav.admins" },
+    { path: "/roles", key: "nav.roles" },
+    { path: "/announcements", key: "nav.announcements" },
+    { path: "/notifications", key: "nav.notifications" },
+    { path: "/apikeys", key: "nav.apikeys" },
+    { path: "/lending", key: "nav.lending" },
+    { path: "/bot", key: "nav.bot" },
+    { path: "/referral", key: "nav.referral" },
+    { path: "/settings", key: "nav.settings" },
+    { path: "/audit", key: "nav.audit" },
+  ];
+
+  const items: PaletteItem[] = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    const result: PaletteItem[] = [];
+
+    const pushPage = (path: string, label: string) =>
+      result.push({
+        id: `p|${path}`,
+        group: "page",
+        label,
+        hint: path,
+        path,
+      });
+
+    // 1) 页面匹配
+    for (const p of pageIndex) {
+      const label = t(p.key).toLowerCase();
+      const hay = `${label} ${p.path} ${p.key}`.toLowerCase();
+      if (q && hay.includes(q)) pushPage(p.path, t(p.key));
+    }
+    // 空查询时展示部分常用页面
+    if (!q) {
+      for (const p of [
+        "/dashboard",
+        "/users",
+        "/orders",
+        "/deposits",
+        "/c2c",
+        "/risk",
+        "/audit",
+        "/admins",
+      ]) {
+        const idx = pageIndex.find((x) => x.path === p);
+        if (idx) pushPage(p, t(idx.key));
+      }
+    }
+
+    // 2) 定向查询（UID / 邮箱 / 手机 / 订单号 / TXID）
+    const raw = searchQuery.trim();
+    const isNumeric = /^\d{3,}$/.test(raw);
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw);
+    const isPhone = /^\+?\d{6,15}$/.test(raw);
+
+    if (raw) {
+      const enc = encodeURIComponent(raw);
+      if (isNumeric) {
+        result.push({
+          id: `u|${raw}`,
+          group: "user",
+          label: t("search.lookupUser", { q: raw }),
+          hint: `${t("col.userId")} · ${t("search.withQuery")}`,
+          path: `#/users?q=${enc}`,
+        });
+        result.push({
+          id: `o|${raw}`,
+          group: "order",
+          label: t("search.lookupOrder", { q: raw }),
+          hint: `${t("col.userId")} · ${t("search.withQuery")}`,
+          path: `#/orders?user_id=${enc}`,
+        });
+      } else if (isEmail) {
+        result.push({
+          id: `ue|${raw}`,
+          group: "user",
+          label: t("search.lookupEmail", { q: raw }),
+          hint: `${t("col.email")} · ${t("search.withQuery")}`,
+          path: `#/users?q=${enc}`,
+        });
+      } else if (isPhone) {
+        result.push({
+          id: `up|${raw}`,
+          group: "user",
+          label: t("search.lookupPhone", { q: raw }),
+          hint: `${t("search.phone")} · ${t("search.withQuery")}`,
+          path: `#/users?q=${enc}`,
+        });
+      } else if (raw.length >= 6) {
+        result.push({
+          id: `ox|${raw}`,
+          group: "order",
+          label: t("search.lookupTxid", { q: raw }),
+          hint: `${t("col.orderId")} / ${t("col.txHash")} · ${t("search.withQuery")}`,
+          path: `#/orders?q=${enc}`,
+        });
+      }
+    }
+
+    return result.slice(0, 50);
+  }, [searchQuery, t, pageIndex]);
+
+  const itemsRef = useRef<PaletteItem[]>(items);
+  itemsRef.current = items;
+
+  const go = (item: PaletteItem) => {
+    location.hash = item.path;
+    closeSearch();
+  };
+
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    const list = itemsRef.current;
+    if (list.length === 0) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActive((a) => (a + 1) % list.length);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActive((a) => (a - 1 + list.length) % list.length);
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      const it = list[Math.min(active, list.length - 1)];
+      if (it) go(it);
+    }
+  };
+
+  useEffect(() => setActive(0), [searchQuery]);
+
+  useEffect(() => {
+    const el = listRef.current?.querySelector(`[data-idx="${active}"]`);
+    el?.scrollIntoView({ block: "nearest" });
+  }, [active]);
+
   if (!searchOpen) return null;
+
+  const groupIcon = (g: PaletteItem["group"]) => {
+    switch (g) {
+      case "user":
+        return <UserIcon className="h-4 w-4 text-info" />;
+      case "order":
+        return <Hash className="h-4 w-4 text-warning" />;
+      case "lookup":
+        return <Search className="h-4 w-4 text-muted-foreground" />;
+      default:
+        return <FileText className="h-4 w-4 text-primary" />;
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh]">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeSearch} />
-      <div className="relative w-full max-w-xl rounded-lg border border-border bg-card shadow-2xl">
+      <div className="relative w-full max-w-xl overflow-hidden rounded-lg border border-border bg-card shadow-2xl">
         <div className="flex items-center gap-2 border-b border-border px-3 py-2.5">
           <Search className="h-4 w-4 text-muted-foreground" />
           <Input
             ref={inputRef}
             value={searchQuery}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
-            placeholder={`${t("header.searchPh")} UID / 邮箱 / TXID …  （Ctrl+K）`}
+            onKeyDown={onKeyDown}
+            placeholder={t("search.placeholder")}
             className="h-8 border-0 bg-transparent px-0 text-sm focus-visible:ring-0"
           />
           <button onClick={closeSearch} className="rounded-md p-1 text-muted-foreground hover:bg-accent">
             <X className="h-4 w-4" />
           </button>
         </div>
-        <div className="max-h-80 overflow-y-auto p-2">
-          {searchQuery.length >= 2 ? (
-            <div className="px-2 py-1 text-xs text-muted-foreground">
-              搜索结果将接入真实 API（uid/email/txid 模糊匹配）
+        <div ref={listRef} className="max-h-80 overflow-y-auto p-1.5 scrollbar-thin">
+          {items.length === 0 ? (
+            <div className="px-3 py-6 text-center text-xs text-muted-foreground">
+              {t("search.empty")}
             </div>
           ) : (
-            <div className="px-3 py-4 text-xs text-muted-foreground text-center">
-              输入至少 2 个字符开始搜索
-            </div>
+            <>
+              {items[0].group !== "page" && (
+                <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  {t("search.lookupGroup")}
+                </div>
+              )}
+              <div className="mb-1 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                {t("search.pagesGroup")}
+              </div>
+              {items.map((it, idx) => (
+                <button
+                  key={it.id}
+                  data-idx={idx}
+                  onClick={() => go(it)}
+                  onMouseEnter={() => setActive(idx)}
+                  className={cn(
+                    "flex w-full items-center gap-3 rounded-md px-2.5 py-2 text-left text-sm",
+                    idx === active ? "bg-accent text-accent-foreground" : "text-foreground",
+                  )}
+                >
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center">
+                    {groupIcon(it.group)}
+                  </span>
+                  <span className="flex-1 truncate">{it.label}</span>
+                  <span className="hidden text-[10px] text-muted-foreground sm:inline">{it.hint}</span>
+                  {idx === active && <CornerDownLeft className="h-3.5 w-3.5 text-muted-foreground" />}
+                </button>
+              ))}
+            </>
           )}
+        </div>
+        <div className="flex items-center justify-between border-t border-border px-3 py-1.5 text-[10px] text-muted-foreground">
+          <div className="flex items-center gap-3">
+            <span className="flex items-center gap-1">
+              <Command className="h-3 w-3" /> <ArrowRight className="h-3 w-3" /> {t("search.nav")}
+            </span>
+            <span className="flex items-center gap-1">↑↓ {t("search.move")}</span>
+            <span className="flex items-center gap-1">↵ {t("search.select")}</span>
+            <span className="flex items-center gap-1">esc {t("search.close")}</span>
+          </div>
         </div>
       </div>
     </div>
@@ -135,7 +354,7 @@ export function NotifPanel() {
 export function Header() {
   const { t, locale, setLocale } = useI18n();
   const { role, logout, refreshMe } = useAuth();
-  const { openSearch, toggleNotif } = useGlobalStore();
+  const { openSearch, toggleNotif, privacyMode, togglePrivacy } = useGlobalStore();
   const [theme, setTheme] = useState<ThemeId>(
     () => (localStorage.getItem(THEME_STORAGE_KEY) as ThemeId) || "dark",
   );
@@ -191,6 +410,20 @@ export function Header() {
       {/* 主题切换 */}
       <Button variant="ghost" size="icon" onClick={toggleTheme} className="h-7 w-7" title={t("settings.theme")}>
         {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+      </Button>
+
+      {/* 防旁观模式（隐私打码） */}
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={togglePrivacy}
+        className={`h-7 w-7 relative ${privacyMode ? "text-destructive" : "text-muted-foreground"}`}
+        title={privacyMode ? t("privacy.disable") : t("privacy.enable")}
+      >
+        {privacyMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+        {privacyMode && (
+          <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-destructive" />
+        )}
       </Button>
 
       {/* 语言选择 */}

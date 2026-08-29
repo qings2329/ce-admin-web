@@ -7,6 +7,7 @@ import { useI18n } from "../i18n";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Alert } from "../components/ui/alert";
+import { MaskedText, maskHash } from "../lib/mask";
 
 export function UserDepositAddresses() {
   const { t } = useI18n();
@@ -82,7 +83,7 @@ export function UserDepositAddresses() {
             label: t('col.address'),
             render: (row: any) => (
               <span className="num" title={row.address}>
-                {row.address}
+                <MaskedText value={row.address} mask={maskHash} />
               </span>
             ),
           },

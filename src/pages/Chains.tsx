@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { AlertTriangle } from "lucide-react";
 import { api } from "../api/client";
 import { usePaged } from "../lib/usePaged";
 import { ApiTable } from "../components/ApiTable";
@@ -7,6 +8,7 @@ import { useI18n } from "../i18n";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Alert } from "../components/ui/alert";
+import { DestructiveActionGuard } from "../components/ui/DestructiveActionGuard";
 import { StatusBadge } from "../components/ui/status-badge";
 
 export function Chains() {
@@ -104,12 +106,44 @@ export function Chains() {
             label: t('col.actions'),
             render: (row: any) => (
               <div className="flex items-center gap-2">
-                <Button size="sm" variant="outline" onClick={() => toggleDeposit(row)}>
-                  {row.deposit_enabled ? t('chains.depositOff') : t('chains.depositOn')}
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => toggleWithdraw(row)}>
-                  {row.withdraw_enabled ? t('chains.withdrawOff') : t('chains.withdrawOn')}
-                </Button>
+                {row.deposit_enabled ? (
+                  <DestructiveActionGuard
+                    confirmText={String(row.name || "CONFIRM")}
+                    confirmLabel={t('chains.depositOff')}
+                    onConfirm={async () => {
+                      await toggleDeposit(row);
+                    }}
+                    trigger={
+                      <Button size="sm" variant="destructive" className="border-dashed">
+                        <AlertTriangle className="h-3.5 w-3.5" />
+                        {t('chains.depositOff')}
+                      </Button>
+                    }
+                  />
+                ) : (
+                  <Button size="sm" variant="outline" onClick={() => toggleDeposit(row)}>
+                    {t('chains.depositOn')}
+                  </Button>
+                )}
+                {row.withdraw_enabled ? (
+                  <DestructiveActionGuard
+                    confirmText={String(row.name || "CONFIRM")}
+                    confirmLabel={t('chains.withdrawOff')}
+                    onConfirm={async () => {
+                      await toggleWithdraw(row);
+                    }}
+                    trigger={
+                      <Button size="sm" variant="destructive" className="border-dashed">
+                        <AlertTriangle className="h-3.5 w-3.5" />
+                        {t('chains.withdrawOff')}
+                      </Button>
+                    }
+                  />
+                ) : (
+                  <Button size="sm" variant="outline" onClick={() => toggleWithdraw(row)}>
+                    {t('chains.withdrawOn')}
+                  </Button>
+                )}
               </div>
             ),
           },

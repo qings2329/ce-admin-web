@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { AlertTriangle } from "lucide-react";
 import { api } from "../api/client";
 import { usePaged } from "../lib/usePaged";
 import { ApiTable } from "../components/ApiTable";
@@ -9,6 +10,7 @@ import { formatDateTime } from "../lib/timezone";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { StatusBadge } from "../components/ui/status-badge";
+import { DestructiveActionGuard } from "../components/ui/DestructiveActionGuard";
 import { Alert } from "../components/ui/alert";
 
 function fmtTime(t: any): string {
@@ -18,7 +20,7 @@ function fmtTime(t: any): string {
 export function ApiKeys() {
   const { perms } = useAuth();
   const { t } = useI18n();
-  const canRead = hasPerm(perms, "apikey:read");
+  const canRead = hasPerm(perms, "apikey:view");
   const canManage = hasPerm(perms, "apikey:manage");
 
   const [userId, setUserId] = useState("");
@@ -79,7 +81,6 @@ export function ApiKeys() {
   };
 
   const revoke = async (id: number) => {
-    if (!window.confirm(t('apikeys.revokeConfirm'))) return;
     setMsg(null);
     try {
       await api.revokeApiKey(id);
@@ -173,7 +174,19 @@ export function ApiKeys() {
             label: t('col.actions'),
             render: (row: any) =>
               row.status === "active" && canManage ? (
-                <Button onClick={() => revoke(row.id)}>{t('apikeys.revoke')}</Button>
+                <DestructiveActionGuard
+                  confirmText={String(row.label || row.prefix || row.id)}
+                  confirmLabel={t('apikeys.revoke')}
+                  onConfirm={async () => {
+                    await revoke(row.id);
+                  }}
+                  trigger={
+                    <Button className="border-dashed">
+                      <AlertTriangle className="h-3.5 w-3.5" />
+                      {t('apikeys.revoke')}
+                    </Button>
+                  }
+                />
               ) : (
                 <span className="text-xs text-muted-foreground">—</span>
               ),

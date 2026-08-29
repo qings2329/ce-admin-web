@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { AlertTriangle } from "lucide-react";
 import { api } from "../api/client";
 import { useFetch } from "../lib/useFetch";
 import { usePaged } from "../lib/usePaged";
@@ -11,6 +12,7 @@ import { Input } from "../components/ui/input";
 import { Select } from "../components/ui/select";
 import { StatusBadge } from "../components/ui/status-badge";
 import { Alert } from "../components/ui/alert";
+import { DestructiveActionGuard } from "../components/ui/DestructiveActionGuard";
 
 export function Admins() {
   const { t } = useI18n();
@@ -158,9 +160,19 @@ export function Admins() {
                   <Button onClick={() => activate(row.id)}>{t('admins.activate')}</Button>
                 )}
                 {row.status === "active" && (
-                  <Button variant="destructive" onClick={() => disable(row.id)}>
-                    {t('admins.disable')}
-                  </Button>
+                  <DestructiveActionGuard
+                    confirmText={String(row.username || row.id)}
+                    confirmLabel={t('admins.disable')}
+                    onConfirm={async () => {
+                      await disable(row.id);
+                    }}
+                    trigger={
+                      <Button variant="destructive" className="border-dashed">
+                        <AlertTriangle className="h-3.5 w-3.5" />
+                        {t('admins.disable')}
+                      </Button>
+                    }
+                  />
                 )}
                 <Button variant="outline" onClick={() => reset(row.id)}>
                   {t('admins.resetPwd')}

@@ -9,6 +9,7 @@ import { Button } from "../components/ui/button";
 import { Select } from "../components/ui/select";
 import { StatusBadge, type StatusTone } from "../components/ui/status-badge";
 import { Alert } from "../components/ui/alert";
+import { MaskedText, maskIp } from "../lib/mask";
 
 function fmtTime(ts?: number): string {
   return formatDateTime(ts);
@@ -31,7 +32,7 @@ function actionTone(action?: string): StatusTone {
 export function Audit() {
   const { t } = useI18n();
   const { perms } = useAuth();
-  const canRead = hasPerm(perms, "audit:read");
+  const canRead = hasPerm(perms, "audit:view");
 
   const [limit, setLimit] = useState("50");
 
@@ -93,7 +94,7 @@ export function Audit() {
               </StatusBadge>
             ),
           },
-          { key: "ip", label: "IP", render: (r: any) => <span className="num">{r.ip}</span> },
+          { key: "ip", label: "IP", render: (r: any) => <span className="num"><MaskedText value={r.ip} mask={maskIp} /></span> },
         ]}
       />
     </div>
