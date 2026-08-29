@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { useAuth, hasPerm } from "../../lib/auth";
 import { useGlobalStore } from "../../store/useGlobalStore";
 import { useI18n } from "../../i18n";
 import { cn } from "../../lib/utils";
@@ -222,19 +221,14 @@ function NavItem({
   collapsed: boolean;
 }) {
   const { t } = useI18n();
-  const { perms } = useAuth();
   const expandedGroups = useGlobalStore((s: { expandedGroups: Record<string, boolean> }) => s.expandedGroups);
   const toggleGroup = useGlobalStore((s: { toggleGroup: (g: string) => void }) => s.toggleGroup);
   const current = location.hash.replace(/^#/, "").split("?")[0];
 
-  const hasAccess =
-    !item.perm || hasPerm(perms, item.perm);
   const hasChildren = item.children && item.children.length > 0;
   const isGroup = !!item.group;
   const isActive = item.path && current === item.path;
   const isExpanded = isGroup ? expandedGroups[item.group!] : false;
-
-  if (!hasAccess) return null;
 
   if (hasChildren && isGroup) {
     return (
