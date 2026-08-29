@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { api } from "../api/client";
 import { useFetch } from "../lib/useFetch";
 import { usePaged } from "../lib/usePaged";
@@ -11,7 +11,8 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Alert } from "../components/ui/alert";
 import { DestructiveActionGuard } from "../components/ui/DestructiveActionGuard";
-import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
+import { Modal } from "../components/ui/Modal";
+import { AlertTriangle } from "lucide-react";
 
 export function Roles() {
   const { t } = useI18n();
@@ -21,102 +22,69 @@ export function Roles() {
   const rolesFetch = usePaged((p) => api.listRoles(p));
   const permsFetch = useFetch(api.listPermissions);
 
-  const [creating, setCreating] = useState(false);
-  const [savingEdit, setSavingEdit] = useState(false);
-  const [savingPerms, setSavingPerms] = useState(false);
   const [name, setName] = useState("");
   const [desc, setDesc] = useState("");
+  const [showCreate, setShowCreate] = useState(false);
   const [selected, setSelected] = useState<number | null>(null);
   const [checked, setChecked] = useState<Record<string, boolean>>({});
   const [editTarget, setEditTarget] = useState<{ id: number; name: string; description: string } | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [savingPerms, setSavingPerms] = useState(false);
 
   const roles = (rolesFetch.items ?? []) as any[];
   const permDict = (permsFetch.data ?? []) as any[];
 
-  // 按分组聚合权限字典
   const grouped: Record<string, any[]> = {};
-  for (const p of permDict) {
-    (grouped[p.group] ??= []).push(p);
-  }
+  for (const p of permDict) (grouped[p.group] ??= []).push(p);
 
   const selectRole = (r: any) => {
     setSelected(r.id);
     const m: Record<string, boolean> = {};
     for (const p of r.permissions ?? []) m[p] = true;
-    setChecked(m);
-    setMsg(null);
+    setChecked(m); setMsg(null);
   };
 
-  const create = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setMsg(null);
-    if (!name.trim()) {
-      setMsg(t('roles.pleaseName'));
-      return;
-    }
-    if (!desc.trim()) {
-      setMsg(t('roles.pleaseDesc'));
-      return;
-    }
+  const doCreate = async (e: React.FormEvent) => {
+    e.preventDefault(); setMsg(null);
+    if (!name) { setMsg(t('roles.pleaseName')); return; }
+    if (!desc.trim()) { setMsg(t('roles.pleaseDesc')); return; }
     setCreating(true);
     try {
       await api.createRole({ name, description: desc });
-      setName("");
-      setDesc("");
+      setName(""); setDesc(""); setShowCreate(false);
       rolesFetch.reload();
     } catch (e: any) {
       setMsg(e?.message ?? t('common.createFailed'));
-    } finally {
-      setCreating(false);
-    }
+    } finally { setCreating(false); }
   };
 
   const savePerms = async () => {
     if (selected == null) return;
-    setMsg(null);
+    setMsg(null); setSavingPerms(true);
     const list = Object.keys(checked).filter((k) => checked[k]);
-    setSavingPerms(true);
     try {
       await api.setRolePermissions(selected, list);
-      rolesFetch.reload();
-      setMsg(t('roles.permSaved'));
+      rolesFetch.reload(); setMsg(t('roles.permSaved'));
     } catch (e: any) {
       setMsg(e?.message ?? t('common.saveFailed'));
-    } finally {
-      setSavingPerms(false);
-    }
+    } finally { setSavingPerms(false); }
   };
 
-  const del = async (id: number) => {
-    try {
-      await api.deleteRole(id);
-      if (selected === id) setSelected(null);
-      rolesFetch.reload();
-    } catch (e: any) {
-      setMsg(e?.message ?? t('common.deleteFailed'));
-    }
-  };
-
-  // 编辑角色名与描述（权限分配走单独的「分配权限」）。
   const saveRoleMeta = async () => {
     if (!editTarget || !editTarget.name) return;
-    setMsg(null);
-    setSavingEdit(true);
+    setMsg(null); setSavingEdit(true);
     try {
-      await api.updateRole(editTarget.id, {
-        name: editTarget.name,
-        description: editTarget.description,
-      });
-      setMsg(t('roles.roleUpdated'));
-      setEditTarget(null);
+      await api.updateRole(editTarget.id, { name: editTarget.name, description: editTarget.description });
+      setMsg(t('roles.roleUpdated')); setEditTarget(null);
       rolesFetch.reload();
     } catch (e: any) {
       setMsg(e?.message ?? t('common.opFailed'));
-    } finally {
-      setSavingEdit(false);
-    }
+    } finally { setSavingEdit(false); }
   };
+
+  const openCreate = () => { setName(""); setDesc(""); setMsg(null); setShowCreate(true); };
 
   if (!canManage) {
     return (
@@ -129,152 +97,82 @@ export function Roles() {
 
   return (
     <div className="space-y-3">
-      <h1 className="text-xl font-semibold">{t('roles.title2')}</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-semibold">{t('roles.title2')}</h1>
+        <Button onClick={openCreate} className="gap-1.5">{t('roles.create')}</Button>
+      </div>
       {msg && <Alert variant="info">{msg}</Alert>}
 
-      <form className="flex flex-wrap items-center gap-2 mb-3" onSubmit={create}>
-        <Input placeholder={t('roles.namePh')} value={name} onChange={(e) => setName(e.target.value)} />
-        <Input placeholder={t('roles.descPh')} value={desc} onChange={(e) => setDesc(e.target.value)} />
-        <Button type="submit" disabled={creating} className="gap-1.5">
-          {creating && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-          {t('roles.create')}
-        </Button>
-      </form>
-
       <ApiTable
-        title={t('roles.listTitle')}
-        rows={roles}
-        loading={rolesFetch.loading}
-        error={rolesFetch.error}
-        onReload={rolesFetch.reload}
-        actions={
-          <Pager
-            total={rolesFetch.total}
-            limit={rolesFetch.limit}
-            page={rolesFetch.page}
-            onChange={rolesFetch.changePage}
-            onLimitChange={rolesFetch.changeLimit}
-          />
-        }
+        title={t('roles.listTitle')} rows={roles} loading={rolesFetch.loading} error={rolesFetch.error} onReload={rolesFetch.reload}
+        actions={<Pager total={rolesFetch.total} limit={rolesFetch.limit} page={rolesFetch.page} onChange={rolesFetch.changePage} onLimitChange={rolesFetch.changeLimit} />}
         columns={[
           { key: "id", label: "ID", render: (row: any) => <span className="num">{row.id}</span> },
           { key: "name", label: t('col.roleName') },
           { key: "description", label: t('col.description') },
+          { key: "permissions", label: t('col.permCount'), render: (row: any) => <span className="num">{String((row.permissions ?? []).length)}</span> },
           {
-            key: "permissions",
-            label: t('col.permCount'),
-            render: (row: any) => <span className="num">{String((row.permissions ?? []).length)}</span>,
-          },
-          {
-            key: "op",
-            label: t('col.actions'),
+            key: "op", label: t('col.actions'),
             render: (row: any) => (
               <div className="flex flex-wrap items-center gap-2">
-                <Button
-                  onClick={() =>
-                    setEditTarget({ id: row.id, name: row.name, description: row.description ?? "" })
-                  }
-                >
-                  {t('common.edit')}
-                </Button>
-                <Button variant="outline" onClick={() => selectRole(row)}>
-                  {t('roles.assign')}
-                </Button>
-                <DestructiveActionGuard
-                  confirmText={String(row.name || row.id)}
-                  confirmLabel={t('common.delete')}
+                <Button size="sm" onClick={() => setEditTarget({ id: row.id, name: row.name, description: row.description ?? "" })}>{t('common.edit')}</Button>
+                <Button size="sm" variant="outline" onClick={() => selectRole(row)}>{t('roles.assign')}</Button>
+                <DestructiveActionGuard confirmText={String(row.name || row.id)} confirmLabel={t('common.delete')}
                   onConfirm={async () => {
-                    await del(row.id);
+                    try { await api.deleteRole(row.id); if (selected === row.id) setSelected(null); rolesFetch.reload(); }
+                    catch (e: any) { setMsg(e?.message ?? t('common.deleteFailed')); }
                   }}
-                  trigger={
-                    <Button variant="destructive" className="border-dashed">
-                      <AlertTriangle className="h-3.5 w-3.5" />
-                      {t('common.delete')}
-                    </Button>
-                  }
-                />
+                  trigger={<Button size="sm" variant="destructive" className="border-dashed"><AlertTriangle className="h-3.5 w-3.5" />{t('common.delete')}</Button>} />
               </div>
             ),
           },
         ]}
       />
 
-      {selected != null && (
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('roles.assignTitle', { id: selected })}</CardTitle>
-            <Button onClick={savePerms} disabled={savingPerms} className="gap-1.5">
-              {savingPerms && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-              {t('roles.savePerms')}
-            </Button>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {Object.entries(grouped).map(([g, items]) => (
-                <div key={g}>
-                  <h3 className="mb-2 text-sm font-medium">{g}</h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-                    {items.map((p) => (
-                      <label key={p.key} className="flex items-center gap-2 text-sm">
-                        <input
-                          type="checkbox"
-                          checked={!!checked[p.key]}
-                          onChange={(e) =>
-                            setChecked((c) => ({ ...c, [p.key]: e.target.checked }))
-                          }
-                        />
-                        <span>
-                          <b>{p.name}</b> <code className="num text-xs text-muted-foreground">{p.key}</code>
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {editTarget != null && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/55"
-          onClick={() => setEditTarget(null)}
-        >
-          <div
-            className="rounded-xl border border-border bg-card p-4 w-[min(560px,92vw)] max-h-[86vh] overflow-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="mb-3 flex items-center justify-between gap-2">
-              <h2 className="text-base font-semibold">{t('roles.editTitle', { id: editTarget.id })}</h2>
-              <Button variant="ghost" onClick={() => setEditTarget(null)}>
-                {t('common.close')}
-              </Button>
-            </div>
-            <form
-              className="flex flex-wrap items-center gap-2"
-              onSubmit={(e) => {
-                e.preventDefault();
-                saveRoleMeta();
-              }}
-            >
-              <Input
-                placeholder={t('roles.namePh')}
-                value={editTarget.name}
-                onChange={(e) => setEditTarget({ ...editTarget, name: e.target.value })}
-              />
-              <Input
-                placeholder={t('roles.descPh')}
-                value={editTarget.description}
-                onChange={(e) => setEditTarget({ ...editTarget, description: e.target.value })}
-              />
-              <Button type="submit" disabled={!editTarget.name || savingEdit} className="gap-1.5">
-                {savingEdit && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                {t('roles.save')}
-              </Button>
-            </form>
-          </div>
+      <Modal open={showCreate} title={t('roles.create')} onClose={() => setShowCreate(false)}
+        footer={<Button onClick={doCreate} disabled={creating} className="gap-1.5">
+          {creating && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+          {t('roles.create')}
+        </Button>}>
+        <div className="space-y-3">
+          <Input placeholder={t('roles.namePh')} value={name} onChange={(e) => setName(e.target.value)} disabled={creating} />
+          <Input placeholder={t('roles.descPh')} value={desc} onChange={(e) => setDesc(e.target.value)} disabled={creating} />
         </div>
+      </Modal>
+
+      <Modal open={editTarget != null} title={t('roles.editTitle', { id: editTarget!.id })} onClose={() => setEditTarget(null)}
+        footer={<Button disabled={!editTarget?.name || savingEdit} onClick={saveRoleMeta} className="gap-1.5">
+          {savingEdit && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+          {t('roles.save')}
+        </Button>}>
+        <div className="space-y-3">
+          <Input placeholder={t('roles.namePh')} value={editTarget?.name ?? ""} onChange={(e) => setEditTarget({ ...editTarget!, name: e.target.value })} disabled={savingEdit} />
+          <Input placeholder={t('roles.descPh')} value={editTarget?.description ?? ""} onChange={(e) => setEditTarget({ ...editTarget!, description: e.target.value })} disabled={savingEdit} />
+        </div>
+      </Modal>
+
+      {selected != null && (
+        <Modal open={true} title={t('roles.assignTitle', { id: selected })} onClose={() => setSelected(null)} size="lg"
+          footer={<Button onClick={savePerms} disabled={savingPerms} className="gap-1.5">
+            {savingPerms && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            {t('roles.savePerms')}
+          </Button>}>
+          <div className="space-y-3 max-h-[60vh] overflow-auto">
+            {Object.entries(grouped).map(([g, items]) => (
+              <div key={g}>
+                <h3 className="mb-2 text-sm font-medium">{g}</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                  {items.map((p) => (
+                    <label key={p.key} className="flex items-center gap-2 text-sm">
+                      <input type="checkbox" checked={!!checked[p.key]} onChange={(e) => setChecked((c) => ({ ...c, [p.key]: e.target.checked }))} />
+                      <span><b>{p.name}</b> <code className="num text-xs text-muted-foreground">{p.key}</code></span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </Modal>
       )}
     </div>
   );

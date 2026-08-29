@@ -10,12 +10,14 @@ import { Input } from "../components/ui/input";
 import { Alert } from "../components/ui/alert";
 import { DestructiveActionGuard } from "../components/ui/DestructiveActionGuard";
 import { StatusBadge } from "../components/ui/status-badge";
+import { Modal } from "../components/ui/Modal";
 
 export function Chains() {
   const { t } = useI18n();
   const { items, total, limit, page, loading, error, reload, changePage, changeLimit } =
     usePaged((p) => api.listChains(p));
   const [creating, setCreating] = useState(false);
+  const [showCreate, setShowCreate] = useState(false);
   const [name, setName] = useState("");
   const [symbol, setSymbol] = useState("");
   const [confirmations, setConfirmations] = useState("3");
@@ -37,6 +39,14 @@ export function Chains() {
     } catch (e: any) {
       setMsg(e?.message ?? t('common.opFailed'));
     }
+  };
+
+  const openCreate = () => {
+    setName("");
+    setSymbol("");
+    setConfirmations("3");
+    setMsg(null);
+    setShowCreate(true);
   };
 
   const create = async (e: React.FormEvent) => {
@@ -63,8 +73,7 @@ export function Chains() {
         deposit_enabled: true,
         withdraw_enabled: false,
       });
-      setName("");
-      setSymbol("");
+      setShowCreate(false);
       reload();
     } catch (e: any) {
       setMsg(e?.message ?? t('common.createFailed'));
@@ -79,15 +88,33 @@ export function Chains() {
       {error && <Alert variant="error">{error}</Alert>}
       {msg && <Alert variant="info">{msg}</Alert>}
 
-      <form className="mb-3 flex flex-wrap items-center gap-2" onSubmit={create}>
-        <Input placeholder={t('chains.namePh')} value={name} onChange={(e) => setName(e.target.value)} />
-        <Input placeholder={t('chains.symbolPh')} value={symbol} onChange={(e) => setSymbol(e.target.value)} />
-        <Input placeholder={t('chains.confirmationsPh')} value={confirmations} onChange={(e) => setConfirmations(e.target.value)} type="number" />
-        <Button type="submit" disabled={creating} className="gap-1.5">
-          {creating && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-          {t('chains.create')}
-        </Button>
-      </form>
+      <Button onClick={openCreate} className="mb-3">
+        {t('chains.create')}
+      </Button>
+
+      <Modal
+        open={showCreate}
+        title={t('chains.create')}
+        onClose={() => setShowCreate(false)}
+        footer={
+          <>
+            <Button type="button" variant="outline" onClick={() => setShowCreate(false)}>
+              {t('common.cancel')}
+            </Button>
+            <Button onClick={(e: any) => create(e)} disabled={creating} className="gap-1.5">
+              {creating && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              {t('chains.create')}
+            </Button>
+          </>
+        }
+        size="md"
+      >
+        <form onSubmit={create} className="space-y-4">
+          <Input placeholder={t('chains.namePh')} value={name} onChange={(e) => setName(e.target.value)} />
+          <Input placeholder={t('chains.symbolPh')} value={symbol} onChange={(e) => setSymbol(e.target.value)} />
+          <Input placeholder={t('chains.confirmationsPh')} value={confirmations} onChange={(e) => setConfirmations(e.target.value)} type="number" />
+        </form>
+      </Modal>
 
       <ApiTable
         title={t('chains.listTitle')}

@@ -10,12 +10,14 @@ import { Input } from "../components/ui/input";
 import { Alert } from "../components/ui/alert";
 import { DestructiveActionGuard } from "../components/ui/DestructiveActionGuard";
 import { StatusBadge } from "../components/ui/status-badge";
+import { Modal } from "../components/ui/Modal";
 
 export function Symbols() {
   const { t } = useI18n();
   const { items, total, limit, page, loading, error, reload, changePage, changeLimit } =
     usePaged((p) => api.listSymbols(p));
   const [creating, setCreating] = useState(false);
+  const [showCreate, setShowCreate] = useState(false);
   const [symbol, setSymbol] = useState("");
   const [fee, setFee] = useState("0.001");
   const [lev, setLev] = useState("20");
@@ -29,6 +31,14 @@ export function Symbols() {
     } catch (e: any) {
       setMsg(e?.message ?? t('common.opFailed'));
     }
+  };
+
+  const openCreate = () => {
+    setSymbol("");
+    setFee("0.001");
+    setLev("20");
+    setMsg(null);
+    setShowCreate(true);
   };
 
   const create = async (e: React.FormEvent) => {
@@ -58,7 +68,7 @@ export function Symbols() {
         max_leverage: parseInt(lev, 10),
         min_qty: 0.0001,
       });
-      setSymbol("");
+      setShowCreate(false);
       reload();
     } catch (e: any) {
       setMsg(e?.message ?? t('common.createFailed'));
@@ -73,15 +83,33 @@ export function Symbols() {
       {error && <Alert variant="error">{error}</Alert>}
       {msg && <Alert variant="info">{msg}</Alert>}
 
-      <form className="mb-3 flex flex-wrap items-center gap-2" onSubmit={create}>
-        <Input placeholder={t('symbols.pairPh')} value={symbol} onChange={(e) => setSymbol(e.target.value)} />
-        <Input placeholder={t('symbols.feeRatePh')} value={fee} onChange={(e) => setFee(e.target.value)} type="number" step="0.0001" />
-        <Input placeholder={t('symbols.maxLevPh')} value={lev} onChange={(e) => setLev(e.target.value)} type="number" />
-        <Button type="submit" disabled={creating} className="gap-1.5">
-          {creating && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-          {t('symbols.create')}
-        </Button>
-      </form>
+      <Button onClick={openCreate} className="mb-3">
+        {t('symbols.create')}
+      </Button>
+
+      <Modal
+        open={showCreate}
+        title={t('symbols.create')}
+        onClose={() => setShowCreate(false)}
+        footer={
+          <>
+            <Button type="button" variant="outline" onClick={() => setShowCreate(false)}>
+              {t('common.cancel')}
+            </Button>
+            <Button onClick={(e: any) => create(e)} disabled={creating} className="gap-1.5">
+              {creating && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              {t('symbols.create')}
+            </Button>
+          </>
+        }
+        size="md"
+      >
+        <form onSubmit={create} className="space-y-4">
+          <Input placeholder={t('symbols.pairPh')} value={symbol} onChange={(e) => setSymbol(e.target.value)} />
+          <Input placeholder={t('symbols.feeRatePh')} value={fee} onChange={(e) => setFee(e.target.value)} type="number" step="0.0001" />
+          <Input placeholder={t('symbols.maxLevPh')} value={lev} onChange={(e) => setLev(e.target.value)} type="number" />
+        </form>
+      </Modal>
 
       <ApiTable
         title={t('symbols.listTitle')}

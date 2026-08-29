@@ -9,18 +9,30 @@ import { formatDateTime } from "../lib/timezone";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Alert } from "../components/ui/alert";
+import { Modal } from "../components/ui/Modal";
 
 export function Coins() {
   const { t } = useI18n();
   const { items, total, limit, page, loading, error, reload, changePage, changeLimit } =
     usePaged((p) => api.listCoins(p));
   const [creating, setCreating] = useState(false);
+  const [showCreate, setShowCreate] = useState(false);
   const [symbol, setSymbol] = useState("");
   const [name, setName] = useState("");
   const [chain, setChain] = useState("");
   const [precision, setPrecision] = useState("8");
   const [fee, setFee] = useState("0.0005");
   const [msg, setMsg] = useState<string | null>(null);
+
+  const openCreate = () => {
+    setSymbol("");
+    setName("");
+    setChain("");
+    setPrecision("8");
+    setFee("0.0005");
+    setMsg(null);
+    setShowCreate(true);
+  };
 
   const create = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,9 +66,7 @@ export function Coins() {
         precision: parseInt(precision, 10),
         withdraw_fee: parseFloat(fee),
       });
-      setSymbol("");
-      setName("");
-      setChain("");
+      setShowCreate(false);
       reload();
     } catch (e: any) {
       setMsg(e?.message ?? t('common.createFailed'));
@@ -71,17 +81,35 @@ export function Coins() {
       {error && <Alert variant="error">{error}</Alert>}
       {msg && <Alert variant="info">{msg}</Alert>}
 
-      <form className="mb-3 flex flex-wrap items-center gap-2" onSubmit={create}>
-        <Input placeholder={t('coins.symbolPh')} value={symbol} onChange={(e) => setSymbol(e.target.value)} />
-        <Input placeholder={t('coins.namePh')} value={name} onChange={(e) => setName(e.target.value)} />
-        <Input placeholder={t('coins.chainPh')} value={chain} onChange={(e) => setChain(e.target.value)} />
-        <Input placeholder={t('coins.precisionPh')} value={precision} onChange={(e) => setPrecision(e.target.value)} type="number" />
-        <Input placeholder={t('coins.feePh')} value={fee} onChange={(e) => setFee(e.target.value)} type="number" step="0.0001" />
-        <Button type="submit" disabled={creating} className="gap-1.5">
-          {creating && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-          {t('coins.create')}
-        </Button>
-      </form>
+      <Button onClick={openCreate} className="mb-3">
+        {t('coins.create')}
+      </Button>
+
+      <Modal
+        open={showCreate}
+        title={t('coins.create')}
+        onClose={() => setShowCreate(false)}
+        footer={
+          <>
+            <Button type="button" variant="outline" onClick={() => setShowCreate(false)}>
+              {t('common.cancel')}
+            </Button>
+            <Button onClick={(e: any) => create(e)} disabled={creating} className="gap-1.5">
+              {creating && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              {t('coins.create')}
+            </Button>
+          </>
+        }
+        size="md"
+      >
+        <form onSubmit={create} className="space-y-4">
+          <Input placeholder={t('coins.symbolPh')} value={symbol} onChange={(e) => setSymbol(e.target.value)} />
+          <Input placeholder={t('coins.namePh')} value={name} onChange={(e) => setName(e.target.value)} />
+          <Input placeholder={t('coins.chainPh')} value={chain} onChange={(e) => setChain(e.target.value)} />
+          <Input placeholder={t('coins.precisionPh')} value={precision} onChange={(e) => setPrecision(e.target.value)} type="number" />
+          <Input placeholder={t('coins.feePh')} value={fee} onChange={(e) => setFee(e.target.value)} type="number" step="0.0001" />
+        </form>
+      </Modal>
 
       <ApiTable
         title={t('coins.listTitle')}
