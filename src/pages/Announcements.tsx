@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { AlertTriangle } from "lucide-react";
 import { useI18n } from "../i18n";
 import { formatDateTime } from "../lib/timezone";
 import { api } from "../api/client";
@@ -9,6 +10,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Select } from "../components/ui/select";
 import { Alert } from "../components/ui/alert";
+import { DestructiveActionGuard } from "../components/ui/DestructiveActionGuard";
 import { StatusBadge } from "../components/ui/status-badge";
 
 const LEVELS = ["info", "warning", "maintenance"] as const;
@@ -72,7 +74,6 @@ export function Announcements() {
   };
 
   const remove = async (id: number) => {
-    if (!confirm(t('ann.deleteConfirm'))) return;
     try {
       await api.deleteAnnouncement(id);
       reload();
@@ -158,9 +159,19 @@ export function Announcements() {
                 <Button size="sm" onClick={() => startEdit(row)}>
                   {t('common.edit')}
                 </Button>
-                <Button size="sm" variant="destructive" onClick={() => remove(row.id)}>
-                  {t('common.delete')}
-                </Button>
+                <DestructiveActionGuard
+                  confirmText={String(row.title || row.id)}
+                  confirmLabel={t('common.delete')}
+                  onConfirm={async () => {
+                    await remove(row.id);
+                  }}
+                  trigger={
+                    <Button size="sm" variant="destructive" className="border-dashed">
+                      <AlertTriangle className="h-3.5 w-3.5" />
+                      {t('common.delete')}
+                    </Button>
+                  }
+                />
               </span>
             ),
           },

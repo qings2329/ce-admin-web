@@ -9,11 +9,12 @@ import { Button } from "../components/ui/button";
 import { StatusBadge } from "../components/ui/status-badge";
 import { Alert } from "../components/ui/alert";
 import { ReviewDrawer, type ReviewItem } from "../components/drawer/ReviewDrawer";
+import { MaskedText, maskHash } from "../lib/mask";
 
 export function LargeWithdrawalReview() {
   const { t } = useI18n();
   const { perms } = useAuth();
-  const canReview = hasPerm(perms, "withdraw:approval");
+  const canReview = hasPerm(perms, "finance:approve");
   const [toast, setToast] = useState<string | null>(null);
 
   const { items, total, limit, page, loading, error, reload, changePage, changeLimit } =
@@ -71,13 +72,13 @@ export function LargeWithdrawalReview() {
             {
               key: "amount",
               label: t("col.amount"),
-              render: (r: any) => <span className="num font-semibold">{r.amount?.toLocaleString()}</span>,
+              render: (r: any) => <span className="num font-semibold"><MaskedText value={r.amount} mask="balance" /></span>,
             },
             { key: "chain", label: t("col.chain"), render: (r: any) => <span>{r.chain ?? "—"}</span> },
             {
               key: "address",
               label: t("col.withdrawAddr"),
-              render: (r: any) => <span className="num text-muted-foreground text-xs max-w-[160px] truncate">{r.address}</span>,
+              render: (r: any) => <span className="num text-muted-foreground text-xs max-w-[160px] truncate"><MaskedText value={r.address} mask={maskHash} /></span>,
             },
             {
               key: "submitted_at",

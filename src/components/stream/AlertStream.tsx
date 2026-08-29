@@ -6,6 +6,7 @@ import { Badge } from "../ui/badge";
 import { StatusBadge } from "../ui/status-badge";
 import { Button } from "../ui/button";
 import { UserX, CheckCircle2, BellOff, Volume2, Pause, Play } from "lucide-react";
+import { MaskedText, maskIp } from "../../lib/mask";
 import type { RiskAlert } from "../../pages/RiskDashboard";
 
 // ─── 告警音效（Web Audio API 合成）─────────────────────────────────────────────
@@ -100,8 +101,8 @@ function StreamAlertCard({
       <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">{t(alert.descKey)}</p>
       <div className="flex items-center gap-x-3 gap-y-0.5 mt-1.5 text-[10px] text-muted-foreground num">
         {alert.user_id && <span>UID <span className="text-foreground">{alert.user_id}</span></span>}
-        {alert.amount && <span>{alert.coin ?? "USDT"} <span className="text-foreground font-medium">{alert.amount.toLocaleString()}</span></span>}
-        {alert.ip && <span className="truncate max-w-[100px]">{alert.ip}</span>}
+        {alert.amount && <span>{alert.coin ?? "USDT"} <span className="text-foreground font-medium"><MaskedText value={alert.amount.toLocaleString()} mask="balance" /></span></span>}
+        {alert.ip && <span className="truncate max-w-[100px]"><MaskedText value={alert.ip} mask={maskIp} /></span>}
       </div>
       {!frozen && (
         <div className="flex items-center gap-1 mt-1.5">

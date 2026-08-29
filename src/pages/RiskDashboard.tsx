@@ -36,6 +36,7 @@ import { FundFlowChart } from "../components/charts/FundFlowChart";
 import { LiquidationDistChart } from "../components/charts/LiquidationDistChart";
 import { AlertStream } from "../components/stream/AlertStream";
 import { TransactionDrillDown } from "../components/dialog/TransactionDrillDown";
+import { MaskedText, maskIp } from "../lib/mask";
 
 // ─── 类型别名（与 AlertStream / TransactionDrillDown 共享）─────────────────────
 export type AlertLevel = "critical" | "warning" | "info";
@@ -247,8 +248,8 @@ function LegacyAlertCard({
       {(alert.user_id || alert.amount) && (
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground num">
           {alert.user_id && <span>{t("col.userId")}: <span className="text-foreground font-medium">{alert.user_id}</span></span>}
-          {alert.amount && <span>{alert.coin ?? "USDT"}: <span className="text-foreground font-medium">{alert.amount.toLocaleString()}</span></span>}
-          {alert.ip && <span>IP: <span className="text-foreground font-medium">{alert.ip}</span></span>}
+          {alert.amount && <span>{alert.coin ?? "USDT"}: <span className="text-foreground font-medium"><MaskedText value={alert.amount.toLocaleString()} mask="balance" /></span></span>}
+          {alert.ip && <span>IP: <span className="text-foreground font-medium"><MaskedText value={alert.ip} mask={maskIp} /></span></span>}
           {alert.country && <span>{t("riskdash.region")}: <span className="text-foreground font-medium">{alert.country}</span></span>}
         </div>
       )}
@@ -328,13 +329,13 @@ function LogDrawer({
             {alert.amount && (
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{t("col.amount")}</span>
-                <span className="num font-semibold">{alert.amount.toLocaleString()} {alert.coin ?? ""}</span>
+                <span className="num font-semibold"><MaskedText value={alert.amount.toLocaleString()} mask="balance" /> {alert.coin ?? ""}</span>
               </div>
             )}
             {alert.ip && (
               <div className="flex justify-between">
                 <span className="text-muted-foreground">IP</span>
-                <span className="num">{alert.ip}</span>
+                <span className="num"><MaskedText value={alert.ip} mask={maskIp} /></span>
               </div>
             )}
             {alert.country && (
@@ -350,7 +351,7 @@ function LogDrawer({
               <p>[{formatDateTime(alert.occurred_at)}] risk_engine.alert_emit level={alert.level}</p>
               <p>[{formatDateTime(alert.occurred_at)}] uid={alert.user_id} score=0.{Math.floor(Math.random() * 900 + 100)}</p>
               <p>[{formatDateTime(alert.occurred_at)}] rule_triggered: [{t(alert.titleKey).replace(/"/g, '\\"')}]</p>
-              {alert.amount && <p>[{formatDateTime(alert.occurred_at)}] amount={alert.amount} coin={alert.coin}</p>}
+              {alert.amount && <p>[{formatDateTime(alert.occurred_at)}] amount={<MaskedText value={alert.amount} mask="balance" />} coin={alert.coin}</p>}
               <p>[{formatDateTime(alert.occurred_at)}] model.confidence={(Math.random() * 0.3 + 0.7).toFixed(3)}</p>
             </div>
           </div>

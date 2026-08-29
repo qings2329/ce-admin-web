@@ -1,6 +1,7 @@
 import { useAuth } from "../../lib/auth";
 import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
+import { PrivacyWatermark } from "./PrivacyWatermark";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { authed } = useAuth();
@@ -14,6 +15,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           {children}
         </main>
       </div>
+      <PrivacyWatermark />
     </div>
   );
 }

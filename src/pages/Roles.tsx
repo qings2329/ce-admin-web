@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { AlertTriangle } from "lucide-react";
 import { api } from "../api/client";
 import { useFetch } from "../lib/useFetch";
 import { usePaged } from "../lib/usePaged";
@@ -9,6 +10,7 @@ import { useI18n } from "../i18n";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Alert } from "../components/ui/alert";
+import { DestructiveActionGuard } from "../components/ui/DestructiveActionGuard";
 import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
 
 export function Roles() {
@@ -74,7 +76,6 @@ export function Roles() {
   };
 
   const del = async (id: number) => {
-    if (!window.confirm(t('roles.confirmDelete'))) return;
     try {
       await api.deleteRole(id);
       if (selected === id) setSelected(null);
@@ -160,9 +161,19 @@ export function Roles() {
                 <Button variant="outline" onClick={() => selectRole(row)}>
                   {t('roles.assign')}
                 </Button>
-                <Button variant="destructive" onClick={() => del(row.id)}>
-                  {t('common.delete')}
-                </Button>
+                <DestructiveActionGuard
+                  confirmText={String(row.name || row.id)}
+                  confirmLabel={t('common.delete')}
+                  onConfirm={async () => {
+                    await del(row.id);
+                  }}
+                  trigger={
+                    <Button variant="destructive" className="border-dashed">
+                      <AlertTriangle className="h-3.5 w-3.5" />
+                      {t('common.delete')}
+                    </Button>
+                  }
+                />
               </div>
             ),
           },

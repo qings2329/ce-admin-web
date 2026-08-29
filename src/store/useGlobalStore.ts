@@ -19,6 +19,11 @@ interface GlobalState {
   toggleNotif: () => void;
   closeNotif: () => void;
 
+  // 防旁观模式（隐私打码）
+  privacyMode: boolean;
+  togglePrivacy: () => void;
+  setPrivacy: (v: boolean) => void;
+
   // 菜单展开状态（分组）
   expandedGroups: Record<string, boolean>;
   toggleGroup: (group: string) => void;
@@ -47,6 +52,18 @@ export const useGlobalStore = create<GlobalState>((set) => ({
   toggleNotif: () => set((s) => ({ notifOpen: !s.notifOpen })),
   closeNotif: () => set({ notifOpen: false }),
 
+  privacyMode: false,
+  togglePrivacy: () =>
+    set((s) => {
+      const next = !s.privacyMode;
+      localStorage.setItem("cx_privacy_mode", next ? "1" : "0");
+      return { privacyMode: next };
+    }),
+  setPrivacy: (v) => {
+    localStorage.setItem("cx_privacy_mode", v ? "1" : "0");
+    set({ privacyMode: v });
+  },
+
   expandedGroups: { finance: true },
   toggleGroup: (group) =>
     set((s) => {
@@ -61,6 +78,10 @@ if (typeof window !== "undefined") {
   const saved = localStorage.getItem("cx_sidebar_collapsed");
   if (saved === "1") {
     useGlobalStore.setState({ sidebarCollapsed: true });
+  }
+  const savedPrivacy = localStorage.getItem("cx_privacy_mode");
+  if (savedPrivacy === "1") {
+    useGlobalStore.setState({ privacyMode: true });
   }
   // 恢复分组展开状态：如果没有保存过，默认展开所有分组
   const savedGroups = localStorage.getItem("cx_sidebar_groups");

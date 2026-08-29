@@ -8,6 +8,7 @@ import { Badge } from "../ui/badge";
 import { StatusBadge } from "../ui/status-badge";
 import { Input } from "../ui/input";
 import { Alert } from "../ui/alert";
+import { MaskedText, maskHash, maskIp } from "../../lib/mask";
 import {
   X,
   CheckCircle2,
@@ -371,12 +372,12 @@ export function ReviewDrawer({
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t("reviewdrawer.userInput")}</p>
             <FieldRow
               label={t("reviewdrawer.fullName")}
-              value={d.full_name}
+              value={<MaskedText value={d.full_name} mask={maskHash} />}
               mismatch={mismatches.includes("full_name")}
             />
             <FieldRow
               label={t("reviewdrawer.idNumber")}
-              value={d.id_number}
+              value={<MaskedText value={d.id_number} mask={maskHash} />}
               mismatch={mismatches.includes("id_number")}
             />
             <FieldRow
@@ -395,12 +396,12 @@ export function ReviewDrawer({
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t("reviewdrawer.ocrResult")}</p>
             <FieldRow
               label={t("reviewdrawer.fullName")}
-              value={d.ocr_full_name}
+              value={<MaskedText value={d.ocr_full_name} mask={maskHash} />}
               mismatch={mismatches.includes("full_name")}
             />
             <FieldRow
               label={t("reviewdrawer.idNumber")}
-              value={d.ocr_id_number}
+              value={<MaskedText value={d.ocr_id_number} mask={maskHash} />}
               mismatch={mismatches.includes("id_number")}
             />
             <FieldRow
@@ -472,11 +473,11 @@ export function ReviewDrawer({
         {/* 提现基本信息 */}
         <div className="grid grid-cols-2 gap-2 text-xs">
           <InfoRow label={t("col.coin")} value={d.coin ?? "-"} />
-          <InfoRow label={t("col.amount")} value={`$${d.amount?.toLocaleString() ?? "-"}`} highlight />
+          <InfoRow label={t("col.amount")} value={<MaskedText value={`$${d.amount?.toLocaleString() ?? "-"}`} mask="balance" />} highlight />
           <InfoRow label={t("col.chain")} value={d.chain ?? "-"} />
-          <InfoRow label={t("col.withdrawAddr")} value={d.address ?? "-"} mono />
+          <InfoRow label={t("col.withdrawAddr")} value={<MaskedText value={d.address} mask={maskHash} />} mono />
           <InfoRow label={t("col.time")} value={formatDateTime(d.submitted_at)} />
-          {d.tx_hash && <InfoRow label={t("col.txHash")} value={d.tx_hash} mono />}
+          {d.tx_hash && <InfoRow label={t("col.txHash")} value={<MaskedText value={d.tx_hash} mask={maskHash} />} mono />}
         </div>
 
         {/* 用户 24h 行为 */}
@@ -488,17 +489,17 @@ export function ReviewDrawer({
           <div className="grid grid-cols-3 gap-2 text-xs">
             <StatBox
               label={t("reviewdrawer.deposit24h")}
-              value={`$${d.user_24h_deposit?.toLocaleString() ?? "-"}`}
+              value={<MaskedText value={`$${d.user_24h_deposit?.toLocaleString() ?? "-"}`} mask="balance" />}
               tone="success"
             />
             <StatBox
               label={t("reviewdrawer.withdrawal24h")}
-              value={`$${d.user_24h_withdrawal?.toLocaleString() ?? "-"}`}
+              value={<MaskedText value={`$${d.user_24h_withdrawal?.toLocaleString() ?? "-"}`} mask="balance" />}
               tone="destructive"
             />
             <StatBox
               label={t("reviewdrawer.pnl24h")}
-              value={`$${d.user_24h_pnl?.toLocaleString() ?? "-"}`}
+              value={<MaskedText value={`$${d.user_24h_pnl?.toLocaleString() ?? "-"}`} mask="balance" />}
               tone={d.user_24h_pnl! >= 0 ? "success" : "destructive"}
             />
           </div>
@@ -532,12 +533,12 @@ export function ReviewDrawer({
 
         {/* 用户画像 */}
         <div className="grid grid-cols-2 gap-2 text-xs">
-          <InfoRow label={t("reviewdrawer.totalDeposit")} value={`$${d.user_total_deposits?.toLocaleString() ?? "-"}`} />
-          <InfoRow label={t("reviewdrawer.totalWithdrawal")} value={`$${d.user_total_withdrawals?.toLocaleString() ?? "-"}`} />
+          <InfoRow label={t("reviewdrawer.totalDeposit")} value={<MaskedText value={`$${d.user_total_deposits?.toLocaleString() ?? "-"}`} mask="balance" />} />
+          <InfoRow label={t("reviewdrawer.totalWithdrawal")} value={<MaskedText value={`$${d.user_total_withdrawals?.toLocaleString() ?? "-"}`} mask="balance" />} />
           <InfoRow label={t("reviewdrawer.txCount")} value={String(d.transaction_count ?? "-")} />
           <InfoRow label={t("reviewdrawer.firstDeposit")} value={formatDateTime(d.first_deposit_at)} />
-          <InfoRow label="IP" value={d.last_login_ip ?? "-"} mono />
-          <InfoRow label={t("reviewdrawer.deviceFp")} value={d.device_fingerprint ?? "-"} mono />
+          <InfoRow label="IP" value={<MaskedText value={d.last_login_ip} mask={maskIp} />} mono />
+          <InfoRow label={t("reviewdrawer.deviceFp")} value={<MaskedText value={d.device_fingerprint} mask={maskHash} />} mono />
         </div>
       </div>
     );
@@ -707,7 +708,7 @@ function FieldRow({
   mismatch,
 }: {
   label: string;
-  value?: string;
+  value?: React.ReactNode;
   mismatch?: boolean;
 }) {
   return (
@@ -745,7 +746,7 @@ function InfoRow({
   highlight,
 }: {
   label: string;
-  value: string;
+  value: React.ReactNode;
   mono?: boolean;
   highlight?: boolean;
 }) {
@@ -765,7 +766,7 @@ function StatBox({
   tone,
 }: {
   label: string;
-  value: string;
+  value: React.ReactNode;
   tone: "success" | "destructive" | "warning" | "neutral";
 }) {
   const toneColor = {

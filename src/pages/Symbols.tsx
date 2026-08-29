@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { AlertTriangle } from "lucide-react";
 import { api } from "../api/client";
 import { usePaged } from "../lib/usePaged";
 import { ApiTable } from "../components/ApiTable";
@@ -7,6 +8,7 @@ import { useI18n } from "../i18n";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Alert } from "../components/ui/alert";
+import { DestructiveActionGuard } from "../components/ui/DestructiveActionGuard";
 import { StatusBadge } from "../components/ui/status-badge";
 
 export function Symbols() {
@@ -90,9 +92,27 @@ export function Symbols() {
             key: "op",
             label: t('col.actions'),
             render: (row: any) => (
-              <Button size="sm" variant="outline" onClick={() => toggle(row)}>
-                {row.status === "online" ? t('symbols.offline') : t('symbols.online')}
-              </Button>
+              <>
+              {row.status === "online" ? (
+                <DestructiveActionGuard
+                  confirmText={String(row.symbol || "CONFIRM")}
+                  confirmLabel={t('symbols.offline')}
+                  onConfirm={async () => {
+                    await toggle(row);
+                  }}
+                  trigger={
+                    <Button size="sm" variant="destructive" className="border-dashed">
+                      <AlertTriangle className="h-3.5 w-3.5" />
+                      {t('symbols.offline')}
+                    </Button>
+                  }
+                />
+              ) : (
+                <Button size="sm" variant="outline" onClick={() => toggle(row)}>
+                  {t('symbols.online')}
+                </Button>
+              )}
+              </>
             ),
           },
         ]}

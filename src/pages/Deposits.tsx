@@ -10,12 +10,13 @@ import { Select } from "../components/ui/select";
 import { Alert } from "../components/ui/alert";
 import { ReviewDrawer, type ReviewItem } from "../components/drawer/ReviewDrawer";
 import { cn } from "../lib/utils";
+import { MaskedText, maskHash } from "../lib/mask";
 
 const STATUSES = ["", "pending", "approved", "rejected"];
 
 export function Deposits() {
   const { perms } = useAuth();
-  const canApprove = hasPerm(perms, "withdraw:approval");
+  const canApprove = hasPerm(perms, "finance:approve");
   const { t } = useI18n();
 
   const [userId, setUserId] = useState("");
@@ -135,8 +136,8 @@ export function Deposits() {
           { key: "user_id", label: t('col.userId'), mono: true },
           { key: "coin", label: t('col.coin') },
           { key: "chain", label: t('col.chain') },
-          { key: "amount", label: t('col.amount'), mono: true },
-          { key: "tx_hash", label: t('col.txHash'), mono: true },
+          { key: "amount", label: t('col.amount'), mono: true, render: (r: any) => <MaskedText value={r.amount} mask="balance" /> },
+          { key: "tx_hash", label: t('col.txHash'), mono: true, render: (r: any) => <MaskedText value={r.tx_hash} mask={maskHash} /> },
           { key: "status", label: t('col.status') },
           { key: "time", label: t('col.time') },
         ]}
@@ -168,9 +169,9 @@ export function Deposits() {
           {
             key: "amount",
             label: t('col.amount'),
-            render: (r: any) => <span className={cn("num font-semibold", (r.amount ?? 0) >= 100000 ? "text-warning" : "")}>{r.amount?.toLocaleString()}</span>,
+            render: (r: any) => <span className={cn("num font-semibold", (r.amount ?? 0) >= 100000 ? "text-warning" : "")}><MaskedText value={r.amount} mask="balance" /></span>,
           },
-          { key: "address", label: t('col.withdrawAddr'), mono: true },
+          { key: "address", label: t('col.withdrawAddr'), mono: true, render: (r: any) => <MaskedText value={r.address} mask={maskHash} /> },
           { key: "status", label: t('col.status') },
           { key: "time", label: t('col.time') },
           {

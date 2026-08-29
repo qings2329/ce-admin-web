@@ -24,6 +24,7 @@ import {
   TableCell,
 } from "../components/ui/table";
 import { Eye, Shield, ShieldOff, Search, RefreshCw } from "lucide-react";
+import { MaskedText } from "../lib/mask";
 
 interface C2COrder {
   id: number;
@@ -226,9 +227,9 @@ export function C2C() {
                       </Badge>
                     </TableCell>
                     <TableCell className="num">{o.coin}</TableCell>
-                    <TableCell className="num">{o.amount.toFixed(4)}</TableCell>
-                    <TableCell className="num">{o.price.toFixed(2)}</TableCell>
-                    <TableCell className="num font-semibold">{o.total.toFixed(2)}</TableCell>
+                    <TableCell className="num"><MaskedText value={o.amount.toFixed(4)} mask="balance" /></TableCell>
+                    <TableCell className="num"><MaskedText value={o.price.toFixed(2)} mask="balance" /></TableCell>
+                    <TableCell className="num font-semibold"><MaskedText value={o.total.toFixed(2)} mask="balance" /></TableCell>
                     <TableCell>
                       <StatusBadge tone={STATUS_TONE[o.status] ?? "neutral"}>
                         {t(`c2c.st.${o.status}`) ?? o.status}
