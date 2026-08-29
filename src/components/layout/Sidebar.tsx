@@ -62,30 +62,44 @@ function NavIcon({ name }: { name?: string }) {
 const MENU_ITEMS: MenuItem[] = [
   // ── 运营 ──────────────────────────────────────────────────────────────────
   {
-    path: "/dashboard",
-    label: "nav.dashboard",
+    group: "ops",
+    label: "nav.opsGroup",
     icon: "LayoutDashboard",
-    perm: "ops:view" as PermissionKey,
-  },
-  {
-    path: "/ops",
-    label: "nav.ops",
-    icon: "TrendingUp",
-    perm: "ops:view" as PermissionKey,
+    children: [
+      {
+        path: "/dashboard",
+        label: "nav.dashboard",
+        icon: "LayoutDashboard",
+        perm: "ops:view" as PermissionKey,
+      },
+      {
+        path: "/ops",
+        label: "nav.ops",
+        icon: "TrendingUp",
+        perm: "ops:view" as PermissionKey,
+      },
+    ],
   },
 
   // ── 风控 ──────────────────────────────────────────────────────────────────
   {
-    path: "/risk-dashboard",
-    label: "nav.riskDashboard",
+    group: "risk",
+    label: "nav.riskGroup",
     icon: "ShieldAlert",
-    perm: "risk:view" as PermissionKey,
-  },
-  {
-    path: "/risk",
-    label: "nav.risk",
-    icon: "Activity",
-    perm: "risk:view" as PermissionKey,
+    children: [
+      {
+        path: "/risk-dashboard",
+        label: "nav.riskDashboard",
+        icon: "ShieldAlert",
+        perm: "risk:view" as PermissionKey,
+      },
+      {
+        path: "/risk",
+        label: "nav.risk",
+        icon: "Activity",
+        perm: "risk:view" as PermissionKey,
+      },
+    ],
   },
 
   // ── 用户 ──────────────────────────────────────────────────────────────────
@@ -333,7 +347,7 @@ export function Sidebar() {
     setMounted(true);
     // 确保所有分组默认展开（即使 localStorage 有旧状态）
     const { expandedGroups } = useGlobalStore.getState();
-    const groups = ["finance", "users", "trade", "system", "tools"];
+    const groups = ["ops", "risk", "finance", "users", "trade", "system", "tools"];
     const toExpand = groups.filter((g) => !expandedGroups[g]);
     if (toExpand.length > 0) {
       const { toggleGroup } = useGlobalStore.getState();
