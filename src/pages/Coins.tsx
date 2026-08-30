@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { api } from "../api/client";
 import { usePaged } from "../lib/usePaged";
@@ -8,6 +8,7 @@ import { useI18n } from "../i18n";
 import { formatDateTime } from "../lib/timezone";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
+import { Select } from "../components/ui/select";
 import { Alert } from "../components/ui/alert";
 import { Modal } from "../components/ui/Modal";
 
@@ -23,6 +24,11 @@ export function Coins() {
   const [precision, setPrecision] = useState("8");
   const [fee, setFee] = useState("0.0005");
   const [msg, setMsg] = useState<string | null>(null);
+  const [chains, setChains] = useState<any[]>([]);
+
+  useEffect(() => {
+    api.listChains().then((d) => setChains(d?.items ?? [])).catch(() => setChains([]));
+  }, []);
 
   const openCreate = () => {
     setSymbol("");
@@ -113,7 +119,14 @@ export function Coins() {
           </div>
           <div>
             <label className="block text-xs text-muted-foreground mb-1">{t('coins.chainPh')}</label>
-            <Input value={chain} onChange={(e) => setChain(e.target.value)} placeholder={t('coins.chainPh')} />
+            <Select value={chain} onChange={(e) => setChain(e.target.value)}>
+              <option value="">{t('coins.chooseChain')}</option>
+              {chains.map((c: any) => (
+                <option key={c.id ?? c.name} value={c.name ?? c.symbol}>
+                  {c.name ?? c.symbol}
+                </option>
+              ))}
+            </Select>
           </div>
           <div>
             <label className="block text-xs text-muted-foreground mb-1">{t('coins.precisionPh')}</label>

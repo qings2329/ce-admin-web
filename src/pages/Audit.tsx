@@ -7,6 +7,7 @@ import { useI18n } from "../i18n";
 import { formatDateTime } from "../lib/timezone";
 import { Button } from "../components/ui/button";
 import { Select } from "../components/ui/select";
+import { Input } from "../components/ui/input";
 import { StatusBadge, type StatusTone } from "../components/ui/status-badge";
 import { Alert } from "../components/ui/alert";
 import { MaskedText, maskIp } from "../lib/mask";
@@ -35,11 +36,26 @@ export function Audit() {
   const canRead = hasPerm(perms, "audit:view");
 
   const [limit, setLimit] = useState("50");
+  const [action, setAction] = useState("");
+  const [method, setMethod] = useState("");
+  const [adminId, setAdminId] = useState("");
+  const [keyword, setKeyword] = useState("");
+  const [params, setParams] = useState<Record<string, any>>({});
 
   const { data, loading, error, reload } = useFetch(() =>
-    api.listAuditLogs({ limit: parseInt(limit, 10) || 50 }),
+    api.listAuditLogs({ ...params, limit: parseInt(limit, 10) || 50 }),
   );
-  // 接口返回 { logs, total }，需取 logs 数组（不能直接把 data 当数组传给表格）。
+
+  const applyFilter = (e: React.FormEvent) => {
+    e.preventDefault();
+    setParams({
+      action: action || undefined,
+      method: method || undefined,
+      admin_id: adminId || undefined,
+      keyword: keyword || undefined,
+    });
+    reload();
+  }; // 接口返回 { logs, total }，需取 logs 数组（不能直接把 data 当数组传给表格）。
   const logs = ((data?.logs as any[]) ?? []) as any[];
 
   if (!canRead) {
@@ -54,6 +70,37 @@ export function Audit() {
   return (
     <div className="space-y-3">
       <h1 className="text-xl font-semibold">{t('audit.title')}</h1>
+      <form className="mb-3 flex flex-wrap items-center gap-2" onSubmit={applyFilter}>
+        <Select value={action} onChange={(e) => setAction(e.target.value)} className="max-w-[150px]">
+          <option value="">{t('audit.actionAll')}</option>
+          <option value="create">{t('audit.actionCreate')}</option>
+          <option value="update">{t('audit.actionUpdate')}</option>
+          <option value="delete">{t('audit.actionDelete')}</option>
+          <option value="login">{t('audit.actionLogin')}</option>
+        </Select>
+        <Select value={method} onChange={(e) => setMethod(e.target.value)} className="max-w-[120px]">
+          <option value="">{t('audit.methodAll')}</option>
+          <option value="POST">POST</option>
+          <option value="PUT">PUT</option>
+          <option value="PATCH">PATCH</option>
+          <option value="DELETE">DELETE</option>
+        </Select>
+        <Input
+          placeholder={t('audit.adminIdPh')} className="max-w-[120px]" value={adminId}
+          onChange={(e) => setAdminId(e.target.value)} type="number"
+        />
+        <Input
+          placeholder={t('audit.keywordPh')} className="max-w-[200px]" value={keyword}
+          onChange={(e) => setKeyword(e.target.value)}
+        />
+        <Button type="submit">{t('common.query')}</Button>
+        <Button type="button" variant="ghost" size="sm" onClick={() => {
+          setAction(""); setMethod(""); setAdminId(""); setKeyword("");
+          setParams({}); reload();
+        }}>
+          ✕
+        </Button>
+      </form>
       <div className="flex flex-wrap items-center gap-2 mb-3">
         <span className="text-xs text-muted-foreground">{t('audit.perPage')}</span>
         <Select value={limit} onChange={(e) => setLimit(e.target.value)}>
