@@ -5,6 +5,7 @@ import { cn } from "../../lib/utils";
 import {
   LayoutDashboard,
   ShieldAlert,
+  ShieldCheck,
   Users,
   Wallet,
   TrendingUp,
@@ -36,6 +37,7 @@ function NavIcon({ name }: { name?: string }) {
   const icons: Record<string, React.ReactNode> = {
     LayoutDashboard: <LayoutDashboard className="h-4 w-4 shrink-0" />,
     ShieldAlert: <ShieldAlert className="h-4 w-4 shrink-0" />,
+    ShieldCheck: <ShieldCheck className="h-4 w-4 shrink-0" />,
     Users: <Users className="h-4 w-4 shrink-0" />,
     Wallet: <Wallet className="h-4 w-4 shrink-0" />,
     TrendingUp: <TrendingUp className="h-4 w-4 shrink-0" />,
