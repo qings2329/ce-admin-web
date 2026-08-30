@@ -220,12 +220,12 @@ export function Orders() {
         }}
       >
         <Input
-          placeholder={t("orders.userIdPh")}
+          placeholder={t("orders.userIdPh")} className="max-w-xs"
           value={userId}
           onChange={(e) => setUserId(e.target.value)}
         />
         <Input
-          placeholder={t("orders.symbolPh")}
+          placeholder={t("orders.symbolPh")} className="max-w-xs"
           value={symbol}
           onChange={(e) => setSymbol(e.target.value)}
         />

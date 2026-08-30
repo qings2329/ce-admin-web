@@ -106,12 +106,12 @@ export function Deposits() {
         }}
       >
         <Input
-          placeholder={t('deposits.userIdPh')}
+          placeholder={t('deposits.userIdPh')} className="max-w-xs"
           value={userId}
           onChange={(e) => setUserId(e.target.value)}
         />
         <Input
-          placeholder={t('deposits.coinPh')}
+          placeholder={t('deposits.coinPh')} className="max-w-xs"
           value={coin}
           onChange={(e) => setCoin(e.target.value)}
         />
