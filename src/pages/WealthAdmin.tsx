@@ -127,7 +127,7 @@ export function WealthAdmin() {
               { key: "asset", label: t("col.asset"), render: (r: any) => <span className="font-mono text-xs">{r.asset}</span> },
               { key: "type", label: t("wealth.type"), render: (r: any) => <span className="text-xs">{typeLabel(r.type)}</span> },
               { key: "annual_rate", label: t("wealth.annualRate"), render: (r: any) => <span className="num text-success">{(r.annual_rate * 100).toFixed(2)}%</span> },
-              { key: "duration_days", label: t("wealth.duration"), render: (r: any) => <span>{r.duration_days === 0 ? t("wealth.flexible") : `${r.duration_days}天`}</span> },
+              { key: "duration_days", label: t("wealth.duration"), render: (r: any) => <span>{r.duration_days === 0 ? t("wealth.flexible") : `${r.duration_days}${t("wealth.durationSuf")}`}</span> },
               { key: "min_amount", label: t("wealth.minAmount"), render: (r: any) => <span className="num">{r.min_amount}</span> },
               { key: "status", label: t("wealth.status"), render: (r: any) => (
                 <span className={`text-xs ${r.status === "open" ? "text-success" : "text-muted-foreground"}`}>
