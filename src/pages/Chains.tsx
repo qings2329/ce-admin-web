@@ -109,10 +109,19 @@ export function Chains() {
         }
         size="md"
       >
-        <form onSubmit={create} className="space-y-4">
-          <Input placeholder={t('chains.namePh')} value={name} onChange={(e) => setName(e.target.value)} />
-          <Input placeholder={t('chains.symbolPh')} value={symbol} onChange={(e) => setSymbol(e.target.value)} />
-          <Input placeholder={t('chains.confirmationsPh')} value={confirmations} onChange={(e) => setConfirmations(e.target.value)} type="number" />
+        <form onSubmit={create} className="space-y-3">
+          <div>
+            <label className="block text-xs text-muted-foreground mb-1">{t('chains.namePh')}</label>
+            <Input placeholder={t('chains.namePh')} value={name} onChange={(e) => setName(e.target.value)} />
+          </div>
+          <div>
+            <label className="block text-xs text-muted-foreground mb-1">{t('chains.symbolPh')}</label>
+            <Input placeholder={t('chains.symbolPh')} value={symbol} onChange={(e) => setSymbol(e.target.value)} />
+          </div>
+          <div>
+            <label className="block text-xs text-muted-foreground mb-1">{t('chains.confirmationsPh')}</label>
+            <Input placeholder={t('chains.confirmationsPh')} value={confirmations} onChange={(e) => setConfirmations(e.target.value)} type="number" />
+          </div>
         </form>
       </Modal>
 

@@ -135,8 +135,14 @@ export function Roles() {
           {t('roles.create')}
         </Button>}>
         <div className="space-y-3">
-          <Input placeholder={t('roles.namePh')} value={name} onChange={(e) => setName(e.target.value)} disabled={creating} />
-          <Input placeholder={t('roles.descPh')} value={desc} onChange={(e) => setDesc(e.target.value)} disabled={creating} />
+          <div>
+            <label className="block text-xs text-muted-foreground mb-1">{t('roles.namePh')}</label>
+            <Input placeholder={t('roles.namePh')} value={name} onChange={(e) => setName(e.target.value)} disabled={creating} />
+          </div>
+          <div>
+            <label className="block text-xs text-muted-foreground mb-1">{t('roles.descPh')}</label>
+            <Input placeholder={t('roles.descPh')} value={desc} onChange={(e) => setDesc(e.target.value)} disabled={creating} />
+          </div>
         </div>
       </Modal>
 
@@ -146,8 +152,14 @@ export function Roles() {
           {t('roles.save')}
         </Button>}>
         <div className="space-y-3">
-          <Input placeholder={t('roles.namePh')} value={editTarget?.name ?? ""} onChange={(e) => setEditTarget({ ...editTarget!, name: e.target.value })} disabled={savingEdit} />
-          <Input placeholder={t('roles.descPh')} value={editTarget?.description ?? ""} onChange={(e) => setEditTarget({ ...editTarget!, description: e.target.value })} disabled={savingEdit} />
+          <div>
+            <label className="block text-xs text-muted-foreground mb-1">{t('roles.namePh')}</label>
+            <Input placeholder={t('roles.namePh')} value={editTarget?.name ?? ""} onChange={(e) => setEditTarget({ ...editTarget!, name: e.target.value })} disabled={savingEdit} />
+          </div>
+          <div>
+            <label className="block text-xs text-muted-foreground mb-1">{t('roles.descPh')}</label>
+            <Input placeholder={t('roles.descPh')} value={editTarget?.description ?? ""} onChange={(e) => setEditTarget({ ...editTarget!, description: e.target.value })} disabled={savingEdit} />
+          </div>
         </div>
       </Modal>
 
