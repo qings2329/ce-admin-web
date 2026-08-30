@@ -260,7 +260,7 @@ export function Settings() {
       )}
 
       {/* 修改密码 */}
-      <section>
+      <section className="max-w-md">
         <div className="flex items-center justify-between mb-3 mt-1">
           <h2 className="text-base font-semibold">{t("settings.changePwd")}</h2>
           <Button onClick={openPwModal} className="gap-1.5">
@@ -288,7 +288,7 @@ export function Settings() {
       </Modal>
 
       {/* MFA */}
-      <section>
+      <section className="max-w-md">
         <h2 className="mb-3 mt-1 text-base font-semibold">{t("settings.mfa")}</h2>
         {me?.totp_enabled ? (
           <Card>
