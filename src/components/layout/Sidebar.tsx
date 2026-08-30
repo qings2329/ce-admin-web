@@ -27,6 +27,8 @@ import {
   Package,
   Gift,
   Link,
+  FileSearch,
+  PieChart,
 } from "lucide-react";
 import type { MenuItem, PermissionKey } from "../../lib/permissions";
 
@@ -54,6 +56,8 @@ function NavIcon({ name }: { name?: string }) {
     ArrowLeftRight: <ArrowLeftRight className="h-4 w-4 shrink-0" />,
     Tool: <Package className="h-4 w-4 shrink-0" />,
     Gift: <Gift className="h-4 w-4 shrink-0" />,
+    FileSearch: <FileSearch className="h-4 w-4 shrink-0" />,
+    PieChart: <PieChart className="h-4 w-4 shrink-0" />,
   };
   return icons[name ?? ""] ?? null;
 }
@@ -296,7 +300,7 @@ function NavItem({
           onClick={() => item.group && toggleGroup(item.group)}
           className={cn(
             "flex w-full items-center gap-2 rounded-md px-3 py-2 text-left transition-colors",
-            "text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground hover:bg-accent",
+            "text-sm font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground hover:bg-accent",
           )}
         >
           <NavIcon name={item.icon} />
