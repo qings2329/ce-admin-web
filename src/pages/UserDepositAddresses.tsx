@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import { usePaged } from "../lib/usePaged";
 import { ApiTable } from "../components/ApiTable";
@@ -6,6 +6,7 @@ import { Pager } from "../components/Pager";
 import { useI18n } from "../i18n";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
+import { Select } from "../components/ui/select";
 import { Alert } from "../components/ui/alert";
 import { MaskedText, maskHash } from "../lib/mask";
 
@@ -14,6 +15,7 @@ export function UserDepositAddresses() {
   const [userId, setUserId] = useState("");
   const [chain, setChain] = useState("");
   const [copied, setCopied] = useState<string | null>(null);
+  const [chains, setChains] = useState<any[]>([]);
   const { items, total, limit, page, loading, error, reload, changePage, changeLimit } =
     usePaged((p) =>
       api.listUserDepositAddresses({
@@ -22,6 +24,10 @@ export function UserDepositAddresses() {
         chain: chain || undefined,
       }),
     );
+
+  useEffect(() => {
+    api.listChains().then((d) => setChains(d?.items ?? [])).catch(() => setChains([]));
+  }, []);
 
   const copy = async (addr: string) => {
     try {
@@ -50,11 +56,17 @@ export function UserDepositAddresses() {
           value={userId}
           onChange={(e) => setUserId(e.target.value)}
         />
-        <Input
-          placeholder={t('depositAddresses.chainPh')} className="max-w-xs"
-          value={chain}
-          onChange={(e) => setChain(e.target.value.toUpperCase())}
-        />
+        <Select
+          value={chain} className="max-w-xs"
+          onChange={(e) => setChain(e.target.value)}
+        >
+          <option value="">{t('depositAddresses.chooseChain')}</option>
+          {chains.map((c: any) => (
+            <option key={c.id ?? c.name} value={c.name ?? c.symbol}>
+              {c.name ?? c.symbol}
+            </option>
+          ))}
+        </Select>
         <Button type="submit">
           {t('common.query')}
         </Button>
