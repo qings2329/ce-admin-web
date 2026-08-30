@@ -368,7 +368,7 @@ export function Settings() {
           </div>
         )}
         {mfaStep === "setup" && setup && (
-          <div className="space-y-5">
+    <div className="mx-auto max-w-2xl space-y-5">
             <div className="flex flex-col items-center gap-3">
               <p className="text-sm text-muted-foreground self-start">{t("settings.step1")}</p>
               <div className="rounded-xl border-2 border-dashed border-border p-4 bg-background flex justify-center">
