@@ -127,6 +127,10 @@ export const api = {
     request(`/api/admin/users/${id}`, { method: "PUT", body: JSON.stringify(patch) }),
   freezeUser: (id: number) => request(`/api/admin/users/${id}/freeze`, { method: "POST" }),
   unfreezeUser: (id: number) => request(`/api/admin/users/${id}/unfreeze`, { method: "POST" }),
+  getUserBalances: (id: number) =>
+    request<{ user_id: number; assets: { asset: string; available: number; frozen: number; withdraw_frozen: number; exists: boolean }[]; total_assets: number }>(
+      `/api/admin/users/${id}/balances`
+    ),
 
   // ---- 交易对/参数配置 ----
   listSymbols: (params?: Record<string, any>) =>

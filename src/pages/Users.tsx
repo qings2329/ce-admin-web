@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Search, AlertTriangle, Loader2 } from "lucide-react";
+import { Search, AlertTriangle, Loader2, Wallet } from "lucide-react";
 import { api } from "../api/client";
 import { usePaged } from "../lib/usePaged";
 import { ApiTable } from "../components/ApiTable";
@@ -14,6 +14,12 @@ import { ReviewDrawer, type ReviewItem } from "../components/drawer/ReviewDrawer
 import { routeParam } from "../lib/routeQuery";
 import { MaskedText, maskEmail } from "../lib/mask";
 import { Modal } from "../components/ui/Modal";
+
+function formatNum(v: any): string {
+  const n = Number(v ?? 0);
+  if (!isFinite(n)) return "0";
+  return n.toLocaleString(undefined, { maximumFractionDigits: 8 });
+}
 
 export function Users() {
   const { t } = useI18n();
@@ -32,6 +38,10 @@ export function Users() {
   const [toast, setToast] = useState<string | null>(null);
   const [drawerItem, setDrawerItem] = useState<ReviewItem | null>(null);
   const [drawerIndex, setDrawerIndex] = useState(0);
+  const [balUser, setBalUser] = useState<any | null>(null);
+  const [balances, setBalances] = useState<any | null>(null);
+  const [balLoading, setBalLoading] = useState(false);
+  const [balError, setBalError] = useState<string | null>(null);
 
   const toggle = async (id: number, freeze: boolean) => {
     try {
@@ -96,6 +106,21 @@ export function Users() {
   };
 
   const closeDrawer = () => setDrawerItem(null);
+
+  const openBalances = async (row: any) => {
+    setBalUser(row);
+    setBalances(null);
+    setBalError(null);
+    setBalLoading(true);
+    try {
+      const data = await api.getUserBalances(Number(row.id));
+      setBalances(data);
+    } catch (e: any) {
+      setBalError(e?.message ?? t('common.opFailed'));
+    } finally {
+      setBalLoading(false);
+    }
+  };
 
   const navigate = (idx: number) => {
     setDrawerItem(items[idx]);
@@ -257,6 +282,10 @@ export function Users() {
                 <Button size="sm" variant="ghost" onClick={() => openDrawer(items.findIndex((r: any) => r.id === row.id))}>
                   {t('users.reviewKyc')}
                 </Button>
+                <Button size="sm" variant="outline" onClick={() => openBalances(row)}>
+                  <Wallet className="h-3.5 w-3.5" />
+                  {t('users.viewAccount')}
+                </Button>
               </div>
             ),
           },
@@ -276,6 +305,57 @@ export function Users() {
           toast={(m) => { setToast(m); setTimeout(() => setToast(null), 2500); }}
         />
       )}
+
+      <Modal
+        open={!!balUser}
+        title={`${t('users.accountBalances')} · ${balUser?.username ?? ''} (UID ${balUser?.id ?? ''})`}
+        onClose={() => setBalUser(null)}
+        size="lg"
+      >
+        {balLoading && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            {t('common.loading')}
+          </div>
+        )}
+        {balError && <Alert variant="error">{balError}</Alert>}
+        {!balLoading && !balError && balances && (
+          <div className="space-y-4">
+            {balances.assets && balances.assets.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b text-left text-muted-foreground">
+                      <th className="pb-2 pr-4 font-medium">{t('col.coin')}</th>
+                      <th className="pb-2 pr-4 text-right font-medium">{t('col.available')}</th>
+                      <th className="pb-2 pr-4 text-right font-medium">{t('col.frozen')}</th>
+                      <th className="pb-2 pr-4 text-right font-medium">{t('col.withdrawFrozen')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {balances.assets.map((a: any) => (
+                      <tr key={a.asset} className="border-b border-muted last:border-0">
+                        <td className="py-2 pr-4 font-medium">{a.asset}</td>
+                        <td className="py-2 pr-4 text-right num"><MaskedText value={formatNum(a.available)} mask="balance" /></td>
+                        <td className="py-2 pr-4 text-right num"><MaskedText value={formatNum(a.frozen)} mask="balance" /></td>
+                        <td className="py-2 pr-4 text-right num"><MaskedText value={formatNum(a.withdraw_frozen)} mask="balance" /></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">{t('users.noBalances')}</p>
+            )}
+            <div className="flex items-center justify-between rounded-lg border border-border bg-muted/40 px-4 py-2.5">
+              <span className="text-sm font-medium">{t('users.totalAssets')}</span>
+              <span className="num text-base font-semibold">
+                <MaskedText value={formatNum(balances.total_assets)} mask="balance" />
+              </span>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }
