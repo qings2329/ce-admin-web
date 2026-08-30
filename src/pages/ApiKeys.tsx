@@ -114,7 +114,7 @@ export function ApiKeys() {
         }}
       >
         <Input
-          placeholder={t('apikeys.userIdPh')}
+          placeholder={t('apikeys.userIdPh')} className="max-w-xs"
           value={userId}
           onChange={(e) => setUserId(e.target.value)}
         />

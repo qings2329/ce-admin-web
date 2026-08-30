@@ -46,12 +46,12 @@ export function UserDepositAddresses() {
         }}
       >
         <Input
-          placeholder={t('depositAddresses.userIdPh')}
+          placeholder={t('depositAddresses.userIdPh')} className="max-w-xs"
           value={userId}
           onChange={(e) => setUserId(e.target.value)}
         />
         <Input
-          placeholder={t('depositAddresses.chainPh')}
+          placeholder={t('depositAddresses.chainPh')} className="max-w-xs"
           value={chain}
           onChange={(e) => setChain(e.target.value.toUpperCase())}
         />
