@@ -300,7 +300,7 @@ function NavItem({
           onClick={() => item.group && toggleGroup(item.group)}
           className={cn(
             "flex w-full items-center gap-2 rounded-md px-3 py-2 text-left transition-colors",
-            "text-sm font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground hover:bg-accent",
+            "text-base font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground hover:bg-accent",
           )}
         >
           <NavIcon name={item.icon} />
