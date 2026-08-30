@@ -212,11 +212,11 @@ export function Settings() {
         <Card>
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-6">
+              <div className="flex items-center gap-2">
                 <Key className="h-4 w-4 text-muted-foreground" />
                 <CardTitle className="text-base">{t("settings.password")}</CardTitle>
               </div>
-              <Button onClick={openPwModal} size="sm" className="gap-1.5">
+              <Button onClick={openPwModal} size="sm" className="ml-10 gap-1.5">
                 <RefreshCw className="h-3.5 w-3.5" />
                 {t("settings.changePwd")}
               </Button>
