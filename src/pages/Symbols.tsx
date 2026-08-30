@@ -104,11 +104,20 @@ export function Symbols() {
         }
         size="md"
       >
-        <form onSubmit={create} className="space-y-4">
-          <Input placeholder={t('symbols.pairPh')} value={symbol} onChange={(e) => setSymbol(e.target.value)} />
-          <Input placeholder={t('symbols.feeRatePh')} value={fee} onChange={(e) => setFee(e.target.value)} type="number" step="0.0001" />
-          <Input placeholder={t('symbols.maxLevPh')} value={lev} onChange={(e) => setLev(e.target.value)} type="number" />
-        </form>
+        <div className="space-y-3">
+          <div>
+            <label className="block text-xs text-muted-foreground mb-1">{t('symbols.pairPh')}</label>
+            <Input value={symbol} onChange={(e) => setSymbol(e.target.value)} placeholder={t('symbols.pairPh')} />
+          </div>
+          <div>
+            <label className="block text-xs text-muted-foreground mb-1">{t('symbols.feeRatePh')}</label>
+            <Input value={fee} onChange={(e) => setFee(e.target.value)} type="number" step="0.0001" placeholder={t('symbols.feeRatePh')} />
+          </div>
+          <div>
+            <label className="block text-xs text-muted-foreground mb-1">{t('symbols.maxLevPh')}</label>
+            <Input value={lev} onChange={(e) => setLev(e.target.value)} type="number" placeholder={t('symbols.maxLevPh')} />
+          </div>
+        </div>
       </Modal>
 
       <ApiTable

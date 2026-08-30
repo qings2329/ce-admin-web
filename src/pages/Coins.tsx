@@ -102,13 +102,28 @@ export function Coins() {
         }
         size="md"
       >
-        <form onSubmit={create} className="space-y-4">
-          <Input placeholder={t('coins.symbolPh')} value={symbol} onChange={(e) => setSymbol(e.target.value)} />
-          <Input placeholder={t('coins.namePh')} value={name} onChange={(e) => setName(e.target.value)} />
-          <Input placeholder={t('coins.chainPh')} value={chain} onChange={(e) => setChain(e.target.value)} />
-          <Input placeholder={t('coins.precisionPh')} value={precision} onChange={(e) => setPrecision(e.target.value)} type="number" />
-          <Input placeholder={t('coins.feePh')} value={fee} onChange={(e) => setFee(e.target.value)} type="number" step="0.0001" />
-        </form>
+        <div className="space-y-3">
+          <div>
+            <label className="block text-xs text-muted-foreground mb-1">{t('coins.symbolPh')}</label>
+            <Input value={symbol} onChange={(e) => setSymbol(e.target.value)} placeholder={t('coins.symbolPh')} />
+          </div>
+          <div>
+            <label className="block text-xs text-muted-foreground mb-1">{t('coins.namePh')}</label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('coins.namePh')} />
+          </div>
+          <div>
+            <label className="block text-xs text-muted-foreground mb-1">{t('coins.chainPh')}</label>
+            <Input value={chain} onChange={(e) => setChain(e.target.value)} placeholder={t('coins.chainPh')} />
+          </div>
+          <div>
+            <label className="block text-xs text-muted-foreground mb-1">{t('coins.precisionPh')}</label>
+            <Input value={precision} onChange={(e) => setPrecision(e.target.value)} type="number" placeholder={t('coins.precisionPh')} />
+          </div>
+          <div>
+            <label className="block text-xs text-muted-foreground mb-1">{t('coins.feePh')}</label>
+            <Input value={fee} onChange={(e) => setFee(e.target.value)} type="number" step="0.0001" placeholder={t('coins.feePh')} />
+          </div>
+        </div>
       </Modal>
 
       <ApiTable
