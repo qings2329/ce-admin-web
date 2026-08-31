@@ -7,6 +7,7 @@ import { Risk } from "./pages/Risk";
 import { Users } from "./pages/Users";
 import { Symbols } from "./pages/Symbols";
 import { Ops } from "./pages/Ops";
+import { PlatformAssets } from "./pages/PlatformAssets";
 import { Deposits } from "./pages/Deposits";
 import { Chains } from "./pages/Chains";
 import { Coins } from "./pages/Coins";
@@ -28,6 +29,7 @@ import { RiskDashboard } from "./pages/RiskDashboard";
 import { C2C } from "./pages/C2C";
 import { KycReview } from "./pages/KycReview";
 import { LargeWithdrawalReview } from "./pages/LargeWithdrawalReview";
+import { Balances } from "./pages/Balances";
 
 function useHash() {
   const [hash, setHash] = useState(location.hash || "#/dashboard");
@@ -49,6 +51,7 @@ const PAGES: Record<string, () => JSX.Element> = {
   "/symbols": Symbols,
   "/ops": Ops,
   "/deposits": Deposits,
+  "/platform-assets": PlatformAssets,
   "/deposit-addresses": UserDepositAddresses,
   "/chains": Chains,
   "/coins": Coins,
@@ -64,6 +67,7 @@ const PAGES: Record<string, () => JSX.Element> = {
   "/wealth": WealthAdmin,
   "/referral": ReferralAdmin,
   "/c2c": C2C,
+  "/balances": Balances,
   "/settings": Settings,
 };
 

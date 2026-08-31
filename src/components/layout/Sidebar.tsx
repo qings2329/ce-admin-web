@@ -142,6 +142,12 @@ const MENU_ITEMS: MenuItem[] = [
         perm: "finance:view" as PermissionKey,
       },
       {
+        path: "/platform-assets",
+        label: "nav.platformAssets",
+        icon: "PieChart",
+        perm: "finance:view" as PermissionKey,
+      },
+      {
         path: "/large-withdrawal-review",
         label: "nav.withdrawalReview",
         icon: "ShieldCheck",
@@ -158,6 +164,12 @@ const MENU_ITEMS: MenuItem[] = [
         label: "nav.depositAddresses",
         icon: "Link",
         perm: "user:view" as PermissionKey,
+      },
+      {
+        path: "/balances",
+        label: "nav.balances",
+        icon: "Wallet",
+        perm: "finance:view" as PermissionKey,
       },
     ],
   },

@@ -140,7 +140,18 @@ export const api = {
     request("/api/admin/symbols", { method: "POST", body: JSON.stringify(s) }),
 
   // ---- 运营看板：账本 + 服务健康 + 通知 ----
-  getLedger: () => request("/api/admin/ledger"),
+  getLedger: () =>
+    request<{
+      updated_at: string;
+      total_assets: number;
+      settlement_balance: number;
+      reconciled: boolean;
+      discrepancy: number;
+      settlement: any;
+      notes?: string;
+      // 按币种拆分的平台链上库存总量（来自 futures wallet inventory）
+      assets: { asset: string; onchain_total: number }[];
+    }>("/api/admin/ledger"),
   getServices: () => request<any[]>("/api/admin/services"),
   listNotifications: (params?: Record<string, any>) =>
     request<{ items: any[]; total: number }>("/api/admin/notifications" + buildQuery(params)),
