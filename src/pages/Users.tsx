@@ -14,6 +14,14 @@ import { ReviewDrawer, type ReviewItem } from "../components/drawer/ReviewDrawer
 import { routeParam } from "../lib/routeQuery";
 import { MaskedText, maskEmail } from "../lib/mask";
 import { Modal } from "../components/ui/Modal";
+import { Select } from "../components/ui/select";
+
+// 用户命名等级（与后端 UserTiers 保持一致：索引即 level 值，0=普通，1~5=VIP1~VIP5）。
+const USER_TIERS = ["普通", "VIP1", "VIP2", "VIP3", "VIP4", "VIP5"] as const;
+const tierLabel = (v: any): string => {
+  const n = Number(v ?? 0);
+  return USER_TIERS[n] ?? "未知";
+};
 
 function formatNum(v: any): string {
   const n = Number(v ?? 0);
@@ -254,6 +262,30 @@ export function Users() {
             label: "KYC",
             render: (row: any) => <StatusBadge tone="neutral">{row.kyc}</StatusBadge>,
           },
+          {
+            key: "level",
+            label: t('users.level'),
+            render: (row: any) => (
+              <Select
+                value={String(row.level ?? 0)}
+                onChange={async (e) => {
+                  const v = Number(e.target.value);
+                  try {
+                    await api.updateUser(Number(row.id), { level: v });
+                    setToast(`${row.username ?? row.id} → ${tierLabel(v)}`);
+                    setTimeout(() => setToast(null), 2000);
+                    reload();
+                  } catch (err: any) {
+                    setMsg(err?.message ?? t('common.opFailed'));
+                  }
+                }}
+              >
+                {USER_TIERS.map((name, i) => (
+                  <option key={i} value={i}>{name}</option>
+                ))}
+              </Select>
+            ),
+          },
           { key: "balance", label: t('col.balance'), render: (row: any) => <span className="num"><MaskedText value={row.balance} mask="balance" /></span> },
           {
             key: "op",
@@ -282,6 +314,25 @@ export function Users() {
                 <Button size="sm" variant="ghost" onClick={() => openDrawer(items.findIndex((r: any) => r.id === row.id))}>
                   {t('users.reviewKyc')}
                 </Button>
+                <DestructiveActionGuard
+                  confirmText={String(row.id)}
+                  description={t("users.reset2faDesc", { uid: row.id })}
+                  onConfirm={async () => {
+                    try {
+                      await api.resetUserTFA(Number(row.id));
+                      setToast(t("users.reset2faDone", { uid: row.id }));
+                      setTimeout(() => setToast(null), 2000);
+                      reload();
+                    } catch (err: any) {
+                      setMsg(err?.message ?? t('common.opFailed'));
+                    }
+                  }}
+                  trigger={
+                    <Button size="sm" variant="outline">
+                      {t('users.reset2fa')}
+                    </Button>
+                  }
+                />
                 <Button size="sm" variant="outline" onClick={() => openBalances(row)}>
                   <Wallet className="h-3.5 w-3.5" />
                   {t('users.viewAccount')}

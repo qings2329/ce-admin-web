@@ -341,6 +341,10 @@ const zhCN: Dict = {
   "users.accountBalances": "账户余额",
   "users.noBalances": "暂无余额数据（该服务可能未就绪）",
   "users.totalAssets": "总资产",
+  "users.level": "用户等级",
+  "users.reset2fa": "重置2FA",
+  "users.reset2faDesc": "你将重置用户（UID {uid}）的 Google 验证码（关闭其二次验证并清空密钥），用户需重新绑定。请核对无误后继续。",
+  "users.reset2faDone": "已重置用户（UID {uid}）的 Google 验证码",
 
    // ---- 交易对配置 ----
   "symbols.title": "交易对 / 参数配置",
