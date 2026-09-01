@@ -27,6 +27,7 @@ const ALL_LINKS: { path: string; key: string; perm?: string }[] = [
   { path: "/lending", key: "nav.lending" },
   { path: "/bot", key: "nav.bot" },
   { path: "/referral", key: "nav.referral" },
+  { path: "/futures", key: "nav.futures", perm: "futures:view" },
   { path: "/settings", key: "nav.settings" },
 ];
 

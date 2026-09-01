@@ -317,6 +317,42 @@ export const api = {
   botTick: (id: number | string) =>
     request<any>("/api/admin/bot/strategies/" + id + "/tick", { method: "POST", body: "{}" }),
 
+  // ---- 期货交易管理（代理 futures 服务）----
+  getFuturesPositions: (params?: Record<string, any>) =>
+    request<any>("/api/admin/futures/positions" + buildQuery(params)),
+  getFuturesFunding: (params?: Record<string, any>) =>
+    request<any>("/api/admin/futures/funding" + buildQuery(params)),
+  getFuturesFundingHistory: () =>
+    request<any>("/api/admin/futures/funding-history"),
+  futuresDeposit: (body: { user_id: number; amount: number }) =>
+    request("/api/admin/futures/deposit", { method: "POST", body: JSON.stringify(body) }),
+  futuresWithdrawChain: (body: {
+    user_id: number;
+    asset: string;
+    chain: string;
+    amount: number;
+    address: string;
+    fee?: number;
+  }) =>
+    request("/api/admin/futures/withdraw/chain", { method: "POST", body: JSON.stringify(body) }),
+  futuresEmergencyFreeze: () =>
+    request("/api/admin/futures/withdraw/emergency/freeze", { method: "POST" }),
+  futuresEmergencyResume: () =>
+    request("/api/admin/futures/withdraw/emergency/resume", { method: "POST" }),
+  futuresRiskEnable: (body: {
+    enabled: boolean;
+    auto_freeze: boolean;
+    window_sec?: number;
+    velocity_amount?: number;
+    velocity_count?: number;
+    addr_burst?: number;
+  }) =>
+    request("/api/admin/futures/risk/enable", { method: "POST", body: JSON.stringify(body) }),
+  futuresSocializePropose: (body: { asset: string }) =>
+    request("/api/admin/futures/baddebt/socialize/propose", { method: "POST", body: JSON.stringify(body) }),
+  futuresSocializeApprove: (body: { asset: string; proposal_id: string }) =>
+    request("/api/admin/futures/baddebt/socialize/approve", { method: "POST", body: JSON.stringify(body) }),
+
   // ---- 邀请佣金管理 ----
   getReferralCommissions: (params?: { limit?: number; offset?: number }) =>
     request<{ commissions: Commission[]; total: number }>("/api/admin/referral/commissions" + buildQuery(params)),

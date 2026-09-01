@@ -24,6 +24,9 @@ export const PERMISSIONS = {
   "system:config": "系统配置（交易对/币种/公链）",
   "sys:settings": "安全设置",
   "ops:view": "运营看板",
+  // 期货交易管理
+  "futures:view": "期货持仓/资金费查看",
+  "futures:manage": "期货交易管理（充值/代客直提/应急冻结/风控开关/坏账分摊）",
   // 其他
   "notification:write": "发布运营通知",
   "announcement:write": "发布公告",
@@ -54,6 +57,7 @@ export const ROLE_PERMISSIONS: Record<string, PermissionKey[]> = {
   operator: [
     "ops:view",
     "risk:view",
+    "futures:view",
     "user:view",
     "trade:view",
     "notification:write",
