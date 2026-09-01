@@ -105,6 +105,27 @@ const MENU_ITEMS: MenuItem[] = [
         icon: "Activity",
         perm: "risk:view" as PermissionKey,
       },
+      {
+        path: "/risk-manage",
+        label: "nav.riskManage",
+        icon: "ShieldCheck",
+        perm: "risk:view" as PermissionKey,
+      },
+    ],
+  },
+
+  // ── 期货交易管理 ──────────────────────────────────────────────────────────
+  {
+    group: "futures",
+    label: "nav.futuresGroup",
+    icon: "TrendingUp",
+    children: [
+      {
+        path: "/futures",
+        label: "nav.futures",
+        icon: "TrendingUp",
+        perm: "futures:view" as PermissionKey,
+      },
     ],
   },
 
@@ -370,7 +391,7 @@ export function Sidebar() {
     setMounted(true);
     // 确保所有分组默认展开（即使 localStorage 有旧状态）
     const { expandedGroups } = useGlobalStore.getState();
-    const groups = ["ops", "risk", "finance", "users", "trade", "system", "tools"];
+    const groups = ["ops", "risk", "finance", "users", "trade", "system", "tools", "futures"];
     const toExpand = groups.filter((g) => !expandedGroups[g]);
     if (toExpand.length > 0) {
       const { toggleGroup } = useGlobalStore.getState();

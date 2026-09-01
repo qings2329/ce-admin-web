@@ -692,6 +692,7 @@ const zhCN: Dict = {
   "referral.confirmed": "已到账",
   "referral.pending": "待结算",
   // ---- 期货交易管理 ----
+  "nav.futuresGroup": "期货交易",
   "nav.futures": "期货交易管理",
   "futures.title": "期货交易管理",
   "futures.noViewPerm": "无访问权限（需 futures:view）",
@@ -1694,6 +1695,7 @@ const enUS: Dict = {
   "referral.confirmed": "Confirmed",
   "referral.pending": "Pending",
   // ---- Futures Management ----
+  "nav.futuresGroup": "Futures Trading",
   "nav.futures": "Futures Management",
   "futures.title": "Futures Management",
   "futures.noViewPerm": "No access (requires futures:view)",
