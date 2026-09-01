@@ -10,6 +10,7 @@ import { Select } from "./ui/select";
 const ALL_LINKS: { path: string; key: string; perm?: string }[] = [
   { path: "/dashboard", key: "nav.dashboard" },
   { path: "/risk", key: "nav.risk" },
+  { path: "/risk-manage", key: "nav.riskManage", perm: "risk:view" },
   { path: "/users", key: "nav.users" },
   { path: "/symbols", key: "nav.symbols" },
   { path: "/ops", key: "nav.ops" },

@@ -31,6 +31,7 @@ import { KycReview } from "./pages/KycReview";
 import { LargeWithdrawalReview } from "./pages/LargeWithdrawalReview";
 import { Balances } from "./pages/Balances";
 import { FuturesAdmin } from "./pages/FuturesAdmin";
+import { RiskManagement } from "./pages/RiskManagement";
 
 function useHash() {
   const [hash, setHash] = useState(location.hash || "#/dashboard");
@@ -70,6 +71,7 @@ const PAGES: Record<string, () => JSX.Element> = {
   "/c2c": C2C,
   "/balances": Balances,
   "/futures": FuturesAdmin,
+  "/risk-manage": RiskManagement,
   "/settings": Settings,
 };
 

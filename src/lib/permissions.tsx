@@ -7,6 +7,7 @@ import { Alert } from "../components/ui/alert";
 export const PERMISSIONS = {
   // 只读类
   "risk:view": "风控大盘查看",
+  "risk:manage": "风控规则/黑名单管理（增删）",
   "user:view": "用户列表查看",
   "user:write": "用户写入（创建/冻结/解冻）",
   "trade:view": "交易数据查看（订单/成交流水）",

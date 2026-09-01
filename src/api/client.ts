@@ -353,6 +353,38 @@ export const api = {
   futuresSocializeApprove: (body: { asset: string; proposal_id: string }) =>
     request("/api/admin/futures/baddebt/socialize/approve", { method: "POST", body: JSON.stringify(body) }),
 
+  // ---- 风控规则/黑名单管理（代理 risk 服务）----
+  getRiskRules: () =>
+    request<{ items: any[]; count: number }>("/api/admin/risk/rules"),
+  createRiskRule: (body: {
+    name: string;
+    kind: string;
+    scope: string;
+    user_id?: number;
+    asset?: string;
+    max_amount_per_day?: number;
+    max_count_per_day?: number;
+    min_kyc_level?: number;
+    enabled?: boolean;
+  }) =>
+    request("/api/admin/risk/rules", { method: "POST", body: JSON.stringify(body) }),
+  getRiskBlacklist: (params?: Record<string, any>) =>
+    request<{ items: any[]; count: number }>("/api/admin/risk/blacklist" + buildQuery(params)),
+  createRiskBlacklist: (body: { target: string; kind: string; reason: string }) =>
+    request("/api/admin/risk/blacklist", { method: "POST", body: JSON.stringify(body) }),
+  deleteRiskBlacklist: (target: string) =>
+    request("/api/admin/risk/blacklist" + buildQuery({ target }), { method: "DELETE" }),
+  checkRiskBlacklist: (target: string) =>
+    request<{ target: string; blacklisted: boolean }>("/api/admin/risk/blacklist/check" + buildQuery({ target })),
+  checkRiskWithdraw: (body: {
+    user_id: number;
+    asset: string;
+    amount: number;
+    kyc_level: number;
+    address: string;
+  }) =>
+    request<{ allowed: boolean; reason?: string }>("/api/admin/risk/check/withdraw", { method: "POST", body: JSON.stringify(body) }),
+
   // ---- 邀请佣金管理 ----
   getReferralCommissions: (params?: { limit?: number; offset?: number }) =>
     request<{ commissions: Commission[]; total: number }>("/api/admin/referral/commissions" + buildQuery(params)),
