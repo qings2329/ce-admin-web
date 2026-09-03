@@ -69,9 +69,21 @@ export function C2C() {
     setError(null);
     setMsg(null);
     try {
-      const mock: C2COrder[] = generateMockOrders();
-      setOrders(mock);
-      setTotal(mock.length);
+      const qs: Record<string, string | number> = { limit, offset: (page - 1) * limit };
+      if (searchUid) qs.user_id = searchUid;
+      if (filterSide) qs.side = filterSide;
+      if (filterStatus) qs.status = filterStatus;
+      if (filterCoin) qs.coin = filterCoin;
+      const data = await api.get<{ orders: C2COrder[]; total: number }>(
+        "/api/admin/c2c/orders" + qstr(qs)
+      );
+      // 后端以 created_at 交付，前端展示字段为 createdAt。
+      const orders = (data.orders ?? []).map((o) => ({
+        ...o,
+        createdAt: o.createdAt ?? (o as any).created_at ?? "",
+      }));
+      setOrders(orders);
+      setTotal(data.total ?? orders.length);
     } catch (e: any) {
       setError(e?.message ?? t("common.queryFailed"));
     } finally {
@@ -350,27 +362,12 @@ function StatCard({
   );
 }
 
-function generateMockOrders(): C2COrder[] {
-  const coins = ["USDT", "BTC", "ETH"];
-  const sides: ("buy" | "sell")[] = ["buy", "sell"];
-  const statuses: C2COrder["status"][] = ["open", "locked", "completed", "cancelled", "disputed"];
-  const rows: C2COrder[] = [];
-  for (let i = 0; i < 20; i++) {
-    const side = sides[Math.floor(Math.random() * 2)];
-    const coin = coins[Math.floor(Math.random() * 3)];
-    const amount = parseFloat((Math.random() * 10000).toFixed(2));
-    const price = coin === "USDT" ? 1 : coin === "BTC" ? 67500 : 3600;
-    rows.push({
-      id: 10000 + i,
-      side,
-      coin,
-      amount,
-      price,
-      total: parseFloat((amount * price).toFixed(2)),
-      user_id: Math.floor(Math.random() * 20000) + 1000,
-      status: statuses[Math.floor(Math.random() * statuses.length)],
-      createdAt: new Date(Date.now() - Math.random() * 86400000 * 7).toISOString().slice(0, 16).replace("T", " "),
-    });
+function qstr(params: Record<string, string | number>): string {
+  const us = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) {
+    if (v === undefined || v === null || v === "") continue;
+    us.set(k, String(v));
   }
-  return rows;
+  const s = us.toString();
+  return s ? `?${s}` : "";
 }
