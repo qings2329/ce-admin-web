@@ -491,18 +491,20 @@ export function RiskDashboard() {
     deposit: number[];
     withdrawal: number[];
     spikes: { idx: number; ts: string; labelKey: string }[];
+    truncated?: boolean;
   }>({ time: [], deposit: [], withdrawal: [], spikes: [] });
 
   useEffect(() => {
     let alive = true;
     (async () => {
       try {
+        const LIMIT = 2000;
         const [depResp, wdResp] = await Promise.all([
-          api.get<{ deposits: { amount: number; time: string }[] }>(
-            "/api/admin/deposits?limit=500"
+          api.get<{ deposits: { amount: number; time: string }[]; total: number }>(
+            "/api/admin/deposits?limit=" + LIMIT
           ),
-          api.get<{ withdrawals: { amount: number; time: string }[] }>(
-            "/api/admin/withdrawals?limit=500"
+          api.get<{ withdrawals: { amount: number; time: string }[]; total: number }>(
+            "/api/admin/withdrawals?limit=" + LIMIT
           ),
         ]);
         if (!alive) return;
@@ -510,12 +512,14 @@ export function RiskDashboard() {
         const now = Date.now();
         const deposit = new Array(hours).fill(0);
         const withdrawal = new Array(hours).fill(0);
-        for (const d of depResp.deposits ?? []) {
+        const deposits = depResp.deposits ?? [];
+        const withdrawals = wdResp.withdrawals ?? [];
+        for (const d of deposits) {
           const t = new Date(d.time).getTime();
           const h = Math.floor((now - t) / 3600000);
           if (h >= 0 && h < hours) deposit[hours - 1 - h] += d.amount ?? 0;
         }
-        for (const w of wdResp.withdrawals ?? []) {
+        for (const w of withdrawals) {
           const t = new Date(w.time).getTime();
           const h = Math.floor((now - t) / 3600000);
           if (h >= 0 && h < hours) withdrawal[hours - 1 - h] += w.amount ?? 0;
@@ -524,14 +528,17 @@ export function RiskDashboard() {
           const t = new Date(now - (hours - 1 - i) * 3600000);
           return t.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" });
         });
+        const depTruncated = deposits.length >= LIMIT;
+        const wdTruncated = withdrawals.length >= LIMIT;
         setDeposit24h(deposit.reduce((a, b) => a + b, 0));
         setWithdraw24h(withdrawal.reduce((a, b) => a + b, 0));
-        setLargeWithdrawCount((wdResp.withdrawals ?? []).filter((w) => (w.amount ?? 0) >= 50000).length);
+        setLargeWithdrawCount(withdrawals.filter((w) => (w.amount ?? 0) >= 50000).length);
         setFundFlow({
           time,
           deposit: deposit.map((v) => Math.round(v)),
           withdrawal: withdrawal.map((v) => Math.round(v)),
           spikes: [],
+          truncated: depTruncated || wdTruncated,
         });
       } catch {
         if (alive) setFundFlow({ time: [], deposit: [], withdrawal: [], spikes: [] });
@@ -647,8 +654,13 @@ export function RiskDashboard() {
 
       {/* 图表行：资金流向 + 爆仓分布 */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        <div className="lg:col-span-2">
-          <FundFlowChart data={fundFlow} onSpikeClick={handleSpikeClick} />
+        <div className="lg:col-span-2 space-y-2">
+          {fundFlow.truncated && (
+            <Alert variant="warn" className="text-xs">
+              {t("riskdash.fundFlowTruncated")}
+            </Alert>
+          )}
+          <FundFlowChart data={{ ...fundFlow, truncated: undefined }} onSpikeClick={handleSpikeClick} />
         </div>
         <LiquidationDistChart data={liqDist} onSymbolClick={handleSymbolClick} />
       </div>

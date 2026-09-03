@@ -51,6 +51,7 @@ interface FundFlowProps {
   deposit: number[];
   withdrawal: number[];
   spikes: { idx: number; ts: string; labelKey: string }[];
+  truncated?: boolean;
 }
 
 interface FundFlowChartProps {

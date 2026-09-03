@@ -908,6 +908,7 @@ const zhCN: Dict = {
   "riskdash.chart.clickDrilldown": "点击任一切片下钻查看明细交易",
   "riskdash.evt.title": "风控事件",
   "riskdash.evt.desc": "系统风控引擎触发事件",
+  "riskdash.fundFlowTruncated": "充提记录已达上限，统计可能不完整",
   "riskdash.drill.title": "交易明细下钻",
   "riskdash.drill.uidPh": "按用户 ID 筛选",
   "riskdash.drill.records": "条记录",
@@ -1189,6 +1190,7 @@ const enUS: Dict = {
   "riskdash.chart.clickDrilldown": "Click any slice to view detail transactions",
   "riskdash.evt.title": "Risk event",
   "riskdash.evt.desc": "Event triggered by the risk engine",
+  "riskdash.fundFlowTruncated": "Deposit/withdrawal records at limit; stats may be incomplete",
   // ---- Drill-down ----
   "riskdash.drill.title": "Transaction Drill-down",
   "riskdash.drill.uidPh": "Filter by User ID",
@@ -2098,6 +2100,7 @@ const zhTW: Dict = {
   "riskdash.chart.clickDrilldown": "點擊任一模塊下鑽查看明細交易",
   "riskdash.evt.title": "風控事件",
   "riskdash.evt.desc": "風控引擎觸發事件",
+  "riskdash.fundFlowTruncated": "充提記錄已達上限，統計可能不完整",
   // ---- Drill-down ----
   "riskdash.drill.title": "交易明細下鑽",
   "riskdash.drill.uidPh": "按用戶 ID 篩選",
@@ -3299,6 +3302,7 @@ const jaJP: Dict = {
   "riskdash.chart.clickDrilldown": "スライスをクリックして詳細取引を表示",
   "riskdash.evt.title": "リスクイベント",
   "riskdash.evt.desc": "リスクエンジンが発生したイベント",
+  "riskdash.fundFlowTruncated": "入出金記録が上限に達しており、統計は不完全な可能性があります",
   // ---- Drill-down ----
   "riskdash.drill.title": "取引ドリルダウン",
   "riskdash.drill.uidPh": "ユーザーIDでフィルタ",
