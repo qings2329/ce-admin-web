@@ -52,6 +52,10 @@ export interface ReviewItem {
 
 export interface KycDetail extends ReviewItem {
   type: "kyc";
+  doc_front?: string;
+  doc_back?: string;
+  reject_reason?: string;
+  // 可选增强字段（接口未返回时隐藏对应面板）
   ocr_full_name?: string;
   ocr_id_number?: string;
   ocr_country?: string;
@@ -94,62 +98,6 @@ const REJECT_REASONS_WD = [
   "用户KYC未通过",
   "其他",
 ];
-
-// ─── 模拟数据生成器 ────────────────────────────────────────────────────────────
-function mockKycDetail(id: number): KycDetail {
-  const name = ["Zhang San", "Li Si", "Wang Wu", "Chen Liu"][Math.floor(Math.random() * 4)];
-  const mismatch = Math.random() < 0.3;
-  return {
-    id,
-    user_id: 1000 + id,
-    submitted_at: new Date(Date.now() - Math.random() * 86400000 * 3).toISOString(),
-    type: "kyc",
-    kyc_level: "KYC2",
-    full_name: name,
-    id_number: `110${String(id).padStart(10, "0")}`,
-    country: ["CN", "US", "SG", "HK"][Math.floor(Math.random() * 4)],
-    expiry_date: "2028-12-31",
-    selfie_url: `https://picsum.photos/seed/kyc-selfie-${id}/200/260`,
-    id_card_front_url: `https://picsum.photos/seed/kyc-id-${id}/300/190`,
-    id_card_back_url: `https://picsum.photos/seed/kyc-idback-${id}/300/190`,
-    ocr_full_name: mismatch ? "Zhang Si" : name,
-    ocr_id_number: mismatch ? `110${String(id).padStart(10, "0")}` : `110${String(id).padStart(10, "0")}`,
-    ocr_country: mismatch ? "US" : "CN",
-    ocr_expiry_date: "2028-12-31",
-    face_score: mismatch ? Math.floor(Math.random() * 40 + 30) : Math.floor(Math.random() * 15 + 80),
-  };
-}
-
-function mockWithdrawalDetail(id: number): WithdrawalDetail {
-  const amount = parseFloat((Math.random() * 200000 + 50000).toFixed(2));
-  const totalDep = parseFloat((Math.random() * 500000 + 100000).toFixed(2));
-  return {
-    id,
-    user_id: 2000 + id,
-    submitted_at: new Date(Date.now() - Math.random() * 3600000 * 6).toISOString(),
-    type2: "withdrawal",
-    coin: "USDT",
-    amount,
-    address: `0x${Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join("")}`,
-    chain: "TRC20",
-    tx_hash: undefined,
-    status: "pending",
-    user_24h_deposit: parseFloat((Math.random() * 100000).toFixed(2)),
-    user_24h_withdrawal: amount,
-    user_24h_pnl: parseFloat((Math.random() * 40000 - 10000).toFixed(2)),
-    aml_tags: Math.random() < 0.3
-      ? ["tornado_cash", "mixer"]
-      : Math.random() < 0.5
-        ? ["high_risk_jurisdiction"]
-        : [],
-    user_total_deposits: totalDep,
-    user_total_withdrawals: parseFloat((totalDep * (0.3 + Math.random() * 0.5)).toFixed(2)),
-    transaction_count: Math.floor(Math.random() * 500 + 50),
-    first_deposit_at: new Date(Date.now() - Math.random() * 86400000 * 365).toISOString(),
-    last_login_ip: `${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`,
-    device_fingerprint: `fp_${String(id).padStart(6, "0")}`,
-  };
-}
 
 // ─── 拒绝原因选择弹窗 ──────────────────────────────────────────────────────────
 function RejectModal({
@@ -266,8 +214,8 @@ export function ReviewDrawer({
     setDetail(null);
     const fn = type === "kyc" ? api.getKycDetail : api.getWithdrawalDetail;
     fn(item.id)
-      .then((d) => setDetail(d ?? (type === "kyc" ? mockKycDetail(item.id) : mockWithdrawalDetail(item.id))))
-      .catch(() => setDetail(type === "kyc" ? mockKycDetail(item.id) : mockWithdrawalDetail(item.id)))
+      .then((d) => setDetail(d ?? null))
+      .catch((e: any) => setError(e?.message ?? t("common.loadFailed")))
       .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [item?.id, type]);
@@ -350,12 +298,16 @@ export function ReviewDrawer({
   const renderKycView = () => {
     const d = detail as KycDetail | null;
     if (!d) return null;
+    const hasOcr = !!(d.ocr_full_name || d.ocr_id_number || d.ocr_country);
     const mismatches: string[] = [];
-    if (d.full_name !== d.ocr_full_name) mismatches.push("full_name");
-    if (d.id_number !== d.ocr_id_number) mismatches.push("id_number");
-    if (d.country !== d.ocr_country) mismatches.push("country");
-    const faceScore = d.face_score ?? 0;
-    const faceOk = faceScore >= 75;
+    if (hasOcr) {
+      if (d.full_name !== d.ocr_full_name) mismatches.push("full_name");
+      if (d.id_number !== d.ocr_id_number) mismatches.push("id_number");
+      if (d.country !== d.ocr_country) mismatches.push("country");
+    }
+    const faceScore = d.face_score;
+    const frontSrc = d.id_card_front_url ?? d.doc_front;
+    const backSrc = d.id_card_back_url ?? d.doc_back;
 
     return (
       <div className="space-y-4">
@@ -365,93 +317,113 @@ export function ReviewDrawer({
           <span className="text-xs text-muted-foreground">{t("col.time")}: {formatDateTime(d.submitted_at)}</span>
         </div>
 
-        {/* 左右对比 */}
+        {(frontSrc || backSrc) && (
+          <div className="grid grid-cols-2 gap-3">
+            {frontSrc && <ImageView src={frontSrc} label={t("reviewdrawer.idCardFront")} />}
+            {d.selfie_url && <ImageView src={d.selfie_url} label={t("reviewdrawer.selfie")} />}
+            {backSrc && !d.selfie_url && (
+              <div className="col-span-2">
+                <ImageView src={backSrc} label={t("reviewdrawer.idCardBack")} />
+              </div>
+            )}
+            {d.selfie_url && backSrc && <ImageView src={backSrc} label={t("reviewdrawer.idCardBack")} />}
+          </div>
+        )}
+
+        {/* 用户填写信息 */}
         <div className="grid grid-cols-2 gap-3">
-          {/* 左侧：用户填写 */}
           <div className="space-y-2">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t("reviewdrawer.userInput")}</p>
             <FieldRow
               label={t("reviewdrawer.fullName")}
               value={<MaskedText value={d.full_name} mask={maskHash} />}
-              mismatch={mismatches.includes("full_name")}
             />
             <FieldRow
               label={t("reviewdrawer.idNumber")}
               value={<MaskedText value={d.id_number} mask={maskHash} />}
-              mismatch={mismatches.includes("id_number")}
             />
             <FieldRow
               label={t("col.chain")}
               value={d.country}
-              mismatch={mismatches.includes("country")}
             />
-            <FieldRow
-              label={t("reviewdrawer.expiryDate")}
-              value={d.expiry_date}
-            />
+            {d.expiry_date && (
+              <FieldRow
+                label={t("reviewdrawer.expiryDate")}
+                value={d.expiry_date}
+              />
+            )}
           </div>
 
-          {/* 右侧：OCR 识别 */}
-          <div className="space-y-2">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t("reviewdrawer.ocrResult")}</p>
-            <FieldRow
-              label={t("reviewdrawer.fullName")}
-              value={<MaskedText value={d.ocr_full_name} mask={maskHash} />}
-              mismatch={mismatches.includes("full_name")}
-            />
-            <FieldRow
-              label={t("reviewdrawer.idNumber")}
-              value={<MaskedText value={d.ocr_id_number} mask={maskHash} />}
-              mismatch={mismatches.includes("id_number")}
-            />
-            <FieldRow
-              label={t("col.chain")}
-              value={d.ocr_country}
-              mismatch={mismatches.includes("country")}
-            />
-            <FieldRow
-              label={t("reviewdrawer.expiryDate")}
-              value={d.ocr_expiry_date}
-            />
-          </div>
+          {hasOcr ? (
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t("reviewdrawer.ocrResult")}</p>
+              <FieldRow
+                label={t("reviewdrawer.fullName")}
+                value={<MaskedText value={d.ocr_full_name} mask={maskHash} />}
+                mismatch={mismatches.includes("full_name")}
+              />
+              <FieldRow
+                label={t("reviewdrawer.idNumber")}
+                value={<MaskedText value={d.ocr_id_number} mask={maskHash} />}
+                mismatch={mismatches.includes("id_number")}
+              />
+              <FieldRow
+                label={t("col.chain")}
+                value={d.ocr_country}
+                mismatch={mismatches.includes("country")}
+              />
+              {d.ocr_expiry_date && (
+                <FieldRow
+                  label={t("reviewdrawer.expiryDate")}
+                  value={d.ocr_expiry_date}
+                />
+              )}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t("reviewdrawer.ocrResult")}</p>
+              <p className="text-xs text-muted-foreground">{t("reviewdrawer.ocrUnavailable")}</p>
+            </div>
+          )}
         </div>
-
-        {/* 图片区域 */}
-        <div className="grid grid-cols-2 gap-3">
-          <ImageView src={d.id_card_front_url} label={t("reviewdrawer.idCardFront")} />
-          <ImageView src={d.selfie_url} label={t("reviewdrawer.selfie")} />
-        </div>
-        {d.id_card_back_url && (
-          <ImageView src={d.id_card_back_url} label={t("reviewdrawer.idCardBack")} />
-        )}
 
         {/* 人脸比对得分 */}
-        <div className="rounded-lg border border-border bg-card p-3 space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground flex items-center gap-1.5">
-              <Fingerprint className="h-3.5 w-3.5" />
-              {t("reviewdrawer.faceMatch")}
-            </span>
-            <span className={cn("text-sm font-bold num", faceOk ? "text-success" : "text-destructive")}>
-              {faceScore}%
-            </span>
+        {faceScore !== undefined && (
+          <div className="rounded-lg border border-border bg-card p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground flex items-center gap-1.5">
+                <Fingerprint className="h-3.5 w-3.5" />
+                {t("reviewdrawer.faceMatch")}
+              </span>
+              <span className={cn("text-sm font-bold num", faceScore >= 75 ? "text-success" : "text-destructive")}>
+                {faceScore}%
+              </span>
+            </div>
+            <div className="h-2 rounded-full bg-muted">
+              <div
+                className={cn("h-2 rounded-full transition-all", faceScore >= 75 ? "bg-success" : "bg-destructive")}
+                style={{ width: `${faceScore}%` }}
+              />
+            </div>
+            <p className={cn("text-[11px]", faceScore >= 75 ? "text-success" : "text-destructive")}>
+              {faceScore >= 75 ? t("reviewdrawer.faceMatchOk") : t("reviewdrawer.faceMatchFail")}
+            </p>
           </div>
-          <div className="h-2 rounded-full bg-muted">
-            <div
-              className={cn("h-2 rounded-full transition-all", faceOk ? "bg-success" : "bg-destructive")}
-              style={{ width: `${faceScore}%` }}
-            />
-          </div>
-          <p className={cn("text-[11px]", faceOk ? "text-success" : "text-destructive")}>
-            {faceOk ? t("reviewdrawer.faceMatchOk") : t("reviewdrawer.faceMatchFail")}
-          </p>
-        </div>
+        )}
 
         {/* 差异高亮 */}
-        {mismatches.length > 0 && (
+        {hasOcr && mismatches.length > 0 && (
           <Alert variant="error" className="text-xs">
             <ShieldAlert className="h-3.5 w-3.5 mr-1.5 shrink-0" />
             {t("reviewdrawer.mismatchFields", { n: mismatches.length })}
+          </Alert>
+        )}
+
+        {/* 拒绝原因 */}
+        {d.reject_reason && (
+          <Alert variant="warn" className="text-xs">
+            <AlertTriangle className="h-3.5 w-3.5 mr-1.5 shrink-0" />
+            {t("reviewdrawer.rejectReason")}: {d.reject_reason}
           </Alert>
         )}
       </div>
