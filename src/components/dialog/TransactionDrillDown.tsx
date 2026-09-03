@@ -54,31 +54,45 @@ function generateDrillRows(count: number): DrillRow[] {
 
 interface TransactionDrillDownProps {
   params: DrillDownParams | null;
+  rows?: DrillRow[];
   onClose: () => void;
 }
 
-export function TransactionDrillDown({ params, onClose }: TransactionDrillDownProps) {
+export function TransactionDrillDown({ params, rows, onClose }: TransactionDrillDownProps) {
   const { t } = useI18n();
-  const [rows, setRows] = useState<DrillRow[]>([]);
+  const [localRows, setLocalRows] = useState<DrillRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filterUid, setFilterUid] = useState("");
 
   useEffect(() => {
     if (!params) return;
+    if (rows && rows.length > 0) {
+      setLocalRows(rows);
+      setLoading(false);
+      setError(null);
+      return;
+    }
     setLoading(true);
     setError(null);
     setTimeout(() => {
       const mock = generateDrillRows(15 + Math.floor(Math.random() * 10));
-      setRows(mock);
+      setLocalRows(mock);
       setLoading(false);
     }, 600);
-  }, [params]);
+  }, [params, rows]);
+
+  const displayRows = rows && rows.length > 0 ? rows : localRows;
 
   const filteredRows = useMemo(() => {
-    if (!filterUid) return rows;
-    return rows.filter((r) => String(r.user_id).includes(filterUid));
-  }, [rows, filterUid]);
+    let base = displayRows;
+    if (params?.symbol) {
+      const sym = params.symbol.toLowerCase();
+      base = base.filter((r) => r.coin && sym.includes(r.coin.toLowerCase()));
+    }
+    if (!filterUid) return base;
+    return base.filter((r) => String(r.user_id).includes(filterUid));
+  }, [displayRows, filterUid, params]);
 
   if (!params) return null;
 

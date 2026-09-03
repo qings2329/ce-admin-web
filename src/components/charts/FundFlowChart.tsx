@@ -46,13 +46,22 @@ function generateFundFlow() {
   };
 }
 
+interface FundFlowProps {
+  time: string[];
+  deposit: number[];
+  withdrawal: number[];
+  spikes: { idx: number; ts: string; labelKey: string }[];
+}
+
 interface FundFlowChartProps {
+  data?: FundFlowProps;
   onSpikeClick?: (spike: { idx: number; ts: string; labelKey: string; deposit: number; withdrawal: number }) => void;
 }
 
-export function FundFlowChart({ onSpikeClick }: FundFlowChartProps) {
+export function FundFlowChart({ data, onSpikeClick }: FundFlowChartProps) {
   const { t } = useI18n();
-  const [flowData] = useState(generateFundFlow);
+  const [fallback] = useState(generateFundFlow);
+  const flowData = data && data.time.length > 0 ? data : fallback;
   const [activeSpike, setActiveSpike] = useState<number | null>(null);
 
   const handleSpikeClick = (params: any) => {

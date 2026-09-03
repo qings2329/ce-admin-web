@@ -33,12 +33,7 @@ function AlertDot({ level }: { level: AlertLevel }) {
   return <span className={`inline-block h-2 w-2 rounded-full ${colors[level]}`} />;
 }
 
-// ─── 模拟风控告警数据（接入真实 WebSocket 后替换）─────────────────────────────
-const MOCK_ALERTS = [
-  { id: 1, level: "critical" as AlertLevel, msg: "用户 #10023 触发大额提币风控，金额 500,000 USDT", time: "2 分钟前" },
-  { id: 2, level: "warning" as AlertLevel, msg: "IP 异常登录检测：UID #8847 从新地域登录", time: "15 分钟前" },
-  { id: 3, level: "info" as AlertLevel, msg: "系统对账完成，差异金额 0.00", time: "1 小时前" },
-];
+// ─── 实时告警面板（数据来自 /api/admin/notifications）──────────────────────────
 
 // ─── 全局极速搜索（Command Palette：Cmd+K / Ctrl+K）──────────────────────────
 // 混合搜索：菜单/页面名称 + UID / 邮箱 / 手机 / TXID / 订单号，命中后直达目标页。
@@ -309,10 +304,39 @@ export function GlobalSearchModal() {
   );
 }
 
-// ─── 通知中心面板 ─────────────────────────────────────────────────────────────
+// ─── 通知中心面板（真实数据，来源 /api/admin/notifications）───────────────────
 export function NotifPanel() {
   const { t } = useI18n();
   const { notifOpen, closeNotif } = useGlobalStore();
+  const [alerts, setAlerts] = useState<
+    { id: number; level: AlertLevel; msg: string; time: string }[]
+  >([]);
+
+  useEffect(() => {
+    if (!notifOpen) return;
+    let alive = true;
+    import("../../api/client")
+      .then(({ api }) => api.listNotifications({ limit: 20 }))
+      .then((data: any) => {
+        if (!alive) return;
+        const now = Date.now();
+        const items: any[] = data?.items ?? [];
+        setAlerts(
+          items.map((n: any) => ({
+            id: n.id,
+            level: n.level === "critical" || n.level === "warning" ? n.level : "info",
+            msg: n.title || n.body || "",
+            time: relTime(now, n.created_at),
+          })),
+        );
+      })
+      .catch(() => {
+        if (alive) setAlerts([]);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [notifOpen]);
 
   if (!notifOpen) return null;
 
@@ -327,18 +351,24 @@ export function NotifPanel() {
           </button>
         </div>
         <div className="max-h-96 overflow-y-auto scrollbar-thin">
-          {MOCK_ALERTS.map((a) => (
-            <div
-              key={a.id}
-              className="flex items-start gap-2.5 border-b border-border px-3 py-2.5 hover:bg-accent"
-            >
-              <AlertDot level={a.level} />
-              <div className="flex-1 min-w-0">
-                <p className="text-xs text-foreground">{a.msg}</p>
-                <p className="mt-0.5 text-[10px] text-muted-foreground">{a.time}</p>
+          {alerts.length === 0 ? (
+            <p className="px-3 py-6 text-center text-xs text-muted-foreground">
+              {t("riskdash.noAlerts")}
+            </p>
+          ) : (
+            alerts.map((a) => (
+              <div
+                key={a.id}
+                className="flex items-start gap-2.5 border-b border-border px-3 py-2.5 hover:bg-accent"
+              >
+                <AlertDot level={a.level} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-foreground">{a.msg}</p>
+                  <p className="mt-0.5 text-[10px] text-muted-foreground">{a.time}</p>
+                </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
         <div className="border-t border-border px-3 py-2 text-center">
           <a href="#/risk" onClick={closeNotif} className="text-xs text-primary hover:underline">
@@ -348,6 +378,19 @@ export function NotifPanel() {
       </div>
     </>
   );
+}
+
+// relTime 将 created_at 转为中文相对时间（x 秒/分钟/小时/天前）。
+function relTime(now: number, created: string | number) {
+  const t = new Date(created).getTime();
+  if (isNaN(t)) return "-";
+  const s = Math.max(0, Math.floor((now - t) / 1000));
+  if (s < 60) return `${s} 秒前`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m} 分钟前`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h} 小时前`;
+  return `${Math.floor(h / 24)} 天前`;
 }
 
 // ─── 顶部 Header ──────────────────────────────────────────────────────────────

@@ -17,12 +17,14 @@ function genLiqData() {
 }
 
 interface LiquidationDistChartProps {
+  data?: { name: string; value: number }[];
   onSymbolClick?: (symbol: string, amount: number) => void;
 }
 
-export function LiquidationDistChart({ onSymbolClick }: LiquidationDistChartProps) {
+export function LiquidationDistChart({ data, onSymbolClick }: LiquidationDistChartProps) {
   const { t } = useI18n();
-  const [data] = useState(() => genLiqData());
+  const [fallback] = useState(() => genLiqData());
+  const chartData = data && data.length > 0 ? data : fallback;
 
   const option = {
     backgroundColor: "transparent",
@@ -51,7 +53,7 @@ export function LiquidationDistChart({ onSymbolClick }: LiquidationDistChartProp
           label: { show: true, fontSize: 13, fontWeight: "bold", color: "hsl(var(--foreground))" },
           itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: "rgba(0,0,0,0.5)" },
         },
-        data,
+        data: chartData,
         color: ["#F6465D", "#0ECB81", "#F0B90B", "#8B5CF6", "#3B82F6", "#6B7280"],
       },
     ],

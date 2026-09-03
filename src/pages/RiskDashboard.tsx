@@ -384,6 +384,84 @@ export function RiskDashboard() {
     kycPending: Math.floor(Math.random() * 200) + 30,
   }), [data]);
 
+  // ─── 接真实数据：爆仓分布 + 钻取明细（来自风控快照 liquidations）────────────
+  const liqDist = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const l of (data as any)?.liquidations ?? []) {
+      const sym = (l.symbol ?? "OTHER").toLowerCase().replace("_usdt", "_USDT").toUpperCase();
+      m.set(sym, (m.get(sym) ?? 0) + (l.equity ?? 0));
+    }
+    return Array.from(m.entries())
+      .map(([name, value]) => ({ name, value: Math.round(value) }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 12);
+  }, [data]);
+
+  const drillRows = useMemo(() => {
+    return ((data as any)?.liquidations ?? []).map((l: any, i: number) => ({
+      id: String(i + 1),
+      user_id: l.user_id,
+      coin: (l.symbol ?? "-").split("_")[0] ?? "-",
+      amount: l.equity ?? 0,
+      status: "completed",
+      time: l.detected ? new Date(l.detected).toISOString() : new Date(0).toISOString(),
+    }));
+  }, [data]);
+
+  // ─── 真实充提流水 → 近 24h 资金流走势（按小时分桶，无则留空不伪造）──────────
+  const [fundFlow, setFundFlow] = useState<{
+    time: string[];
+    deposit: number[];
+    withdrawal: number[];
+    spikes: { idx: number; ts: string; labelKey: string }[];
+  }>({ time: [], deposit: [], withdrawal: [], spikes: [] });
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const [depResp, wdResp] = await Promise.all([
+          api.get<{ deposits: { amount: number; time: string }[] }>(
+            "/api/admin/deposits?limit=500"
+          ),
+          api.get<{ withdrawals: { amount: number; time: string }[] }>(
+            "/api/admin/withdrawals?limit=500"
+          ),
+        ]);
+        if (!alive) return;
+        const hours = 24;
+        const now = Date.now();
+        const deposit = new Array(hours).fill(0);
+        const withdrawal = new Array(hours).fill(0);
+        for (const d of depResp.deposits ?? []) {
+          const t = new Date(d.time).getTime();
+          const h = Math.floor((now - t) / 3600000);
+          if (h >= 0 && h < hours) deposit[hours - 1 - h] += d.amount ?? 0;
+        }
+        for (const w of wdResp.withdrawals ?? []) {
+          const t = new Date(w.time).getTime();
+          const h = Math.floor((now - t) / 3600000);
+          if (h >= 0 && h < hours) withdrawal[hours - 1 - h] += w.amount ?? 0;
+        }
+        const time = Array.from({ length: hours }, (_, i) => {
+          const t = new Date(now - (hours - 1 - i) * 3600000);
+          return t.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" });
+        });
+        setFundFlow({
+          time,
+          deposit: deposit.map((v) => Math.round(v)),
+          withdrawal: withdrawal.map((v) => Math.round(v)),
+          spikes: [],
+        });
+      } catch {
+        if (alive) setFundFlow({ time: [], deposit: [], withdrawal: [], spikes: [] });
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
   const handleFreeze = (userId: number) => {
     setToast(t("riskdash.toast.freeze", { userId }));
     setTimeout(() => setToast(null), 3000);
@@ -490,9 +568,9 @@ export function RiskDashboard() {
       {/* 图表行：资金流向 + 爆仓分布 */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         <div className="lg:col-span-2">
-          <FundFlowChart onSpikeClick={handleSpikeClick} />
+          <FundFlowChart data={fundFlow} onSpikeClick={handleSpikeClick} />
         </div>
-        <LiquidationDistChart onSymbolClick={handleSymbolClick} />
+        <LiquidationDistChart data={liqDist} onSymbolClick={handleSymbolClick} />
       </div>
 
       {/* 告警统计条 */}
@@ -605,7 +683,7 @@ export function RiskDashboard() {
       </Card>
 
       <LogDrawer alert={logAlert} onClose={() => setLogAlert(null)} />
-      <TransactionDrillDown params={drillParams} onClose={() => setDrillParams(null)} />
+      <TransactionDrillDown params={drillParams} rows={drillRows} onClose={() => setDrillParams(null)} />
     </div>
   );
 }
