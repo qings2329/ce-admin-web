@@ -904,6 +904,8 @@ const zhCN: Dict = {
   "riskdash.chart.liquidationDist": "爆仓分布（按交易对）",
   "riskdash.chart.last24h": "近 24h",
   "riskdash.chart.clickDrilldown": "点击任一切片下钻查看明细交易",
+  "riskdash.evt.title": "风控事件",
+  "riskdash.evt.desc": "系统风控引擎触发事件",
   "riskdash.drill.title": "交易明细下钻",
   "riskdash.drill.uidPh": "按用户 ID 筛选",
   "riskdash.drill.records": "条记录",
@@ -1183,6 +1185,8 @@ const enUS: Dict = {
   "riskdash.chart.liquidationDist": "Liquidation Distribution by Symbol",
   "riskdash.chart.last24h": "Last 24h",
   "riskdash.chart.clickDrilldown": "Click any slice to view detail transactions",
+  "riskdash.evt.title": "Risk event",
+  "riskdash.evt.desc": "Event triggered by the risk engine",
   // ---- Drill-down ----
   "riskdash.drill.title": "Transaction Drill-down",
   "riskdash.drill.uidPh": "Filter by User ID",
@@ -2088,6 +2092,8 @@ const zhTW: Dict = {
   "riskdash.chart.liquidationDist": "爆倉分佈（按交易對）",
   "riskdash.chart.last24h": "近 24h",
   "riskdash.chart.clickDrilldown": "點擊任一模塊下鑽查看明細交易",
+  "riskdash.evt.title": "風控事件",
+  "riskdash.evt.desc": "風控引擎觸發事件",
   // ---- Drill-down ----
   "riskdash.drill.title": "交易明細下鑽",
   "riskdash.drill.uidPh": "按用戶 ID 篩選",
@@ -3285,6 +3291,8 @@ const jaJP: Dict = {
   "riskdash.chart.liquidationDist": "強制決済分布（銘柄別）",
   "riskdash.chart.last24h": "過去24h",
   "riskdash.chart.clickDrilldown": "スライスをクリックして詳細取引を表示",
+  "riskdash.evt.title": "リスクイベント",
+  "riskdash.evt.desc": "リスクエンジンが発生したイベント",
   // ---- Drill-down ----
   "riskdash.drill.title": "取引ドリルダウン",
   "riskdash.drill.uidPh": "ユーザーIDでフィルタ",

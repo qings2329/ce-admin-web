@@ -97,8 +97,12 @@ function StreamAlertCard({
           <Badge variant="secondary" className="text-[9px]">{t("riskdash.handled")}</Badge>
         )}
       </div>
-      <p className="text-xs font-semibold mt-1 leading-tight truncate">{t(alert.titleKey)}</p>
-      <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">{t(alert.descKey)}</p>
+      <p className="text-xs font-semibold mt-1 leading-tight truncate">
+        {alert.message ? alert.message : t(alert.titleKey)}
+      </p>
+      {!alert.message && (
+        <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">{t(alert.descKey)}</p>
+      )}
       <div className="flex items-center gap-x-3 gap-y-0.5 mt-1.5 text-[10px] text-muted-foreground num">
         {alert.user_id && <span>UID <span className="text-foreground">{alert.user_id}</span></span>}
         {alert.amount && <span>{alert.coin ?? "USDT"} <span className="text-foreground font-medium"><MaskedText value={alert.amount.toLocaleString()} mask="balance" /></span></span>}

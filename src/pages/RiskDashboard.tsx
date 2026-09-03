@@ -46,6 +46,7 @@ export interface RiskAlert {
   level: AlertLevel;
   titleKey: string;
   descKey: string;
+  message?: string;
   user_id?: number;
   amount?: number;
   coin?: string;
@@ -98,6 +99,14 @@ function pickTemplate(level: AlertLevel) {
     ip,
     country: countries[Math.floor(Math.random() * countries.length)],
   };
+}
+
+// riskEventLevel 将真实风控事件 kind 映射为告警等级：提现/下单/持仓/频率类多半为异常命中。
+function riskEventLevel(kind: string): AlertLevel {
+  const k = (kind ?? "").toLowerCase();
+  if (k.includes("withdraw") || k.includes("position")) return "critical";
+  if (k.includes("order") || k.includes("freq") || k.includes("login") || k.includes("ip")) return "warning";
+  return "info";
 }
 
 // ─── WebSocket 模拟 Hook ──────────────────────────────────────────────────────
@@ -242,8 +251,12 @@ function LegacyAlertCard({
         )}
       </div>
       <div>
-        <p className="text-sm font-semibold leading-snug">{t(alert.titleKey)}</p>
-        <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{t(alert.descKey)}</p>
+        <p className="text-sm font-semibold leading-snug">
+          {alert.message ? alert.message : t(alert.titleKey)}
+        </p>
+        {!alert.message && (
+          <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{t(alert.descKey)}</p>
+        )}
       </div>
       {(alert.user_id || alert.amount) && (
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground num">
@@ -376,13 +389,77 @@ export function RiskDashboard() {
     setAlerts((prev) => [alert, ...prev].slice(0, 300));
   });
 
-  const metrics = useMemo(() => ({
-    netDeposit24h: (Math.random() * 20000000 - 5000000).toFixed(2),
-    largeWithdrawCount: Math.floor(Math.random() * 15) + 3,
-    highRiskIpCount: Math.floor(Math.random() * 50) + 10,
-    liquidationTotal: (Math.random() * 5000000 + 500000).toFixed(2),
-    kycPending: Math.floor(Math.random() * 200) + 30,
-  }), [data]);
+  // ─── 核心指标（接真实数据，非随机）──────────────────────────────────────────
+  const [deposit24h, setDeposit24h] = useState(0);
+  const [withdraw24h, setWithdraw24h] = useState(0);
+  const [largeWithdrawCount, setLargeWithdrawCount] = useState(0);
+  const [highRiskIpCount, setHighRiskIpCount] = useState(0);
+  const [kycPending, setKycPending] = useState(0);
+
+  // KYC 待审队列 + 高风险 IP 黑名单（真实接口）
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const [kycResp, blResp] = await Promise.all([
+          api.listKycReviews({ limit: 1 }),
+          api.getRiskBlacklist(),
+        ]);
+        if (!alive) return;
+        setKycPending((kycResp as any)?.total ?? 0);
+        const items: any[] = (blResp as any)?.items ?? [];
+        setHighRiskIpCount(items.filter((i: any) => /^\d{1,3}(\.\d{1,3}){3}$/.test(i?.target ?? "")).length);
+      } catch {
+        // 上游不可达时保持 0，不伪造
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  // ─── 接真实风控事件：启动时用 /api/admin/risk/events 种子化告警流 ────────────
+  useEffect(() => {
+    let alive = true;
+    api
+      .getRiskEvents({ limit: 50 })
+      .then((resp: any) => {
+        if (!alive) return;
+        const items: any[] = resp?.items ?? [];
+        const seeded: RiskAlert[] = items.map((e: any) => ({
+          id: `evt-${e.id}`,
+          level: riskEventLevel(e.kind),
+          titleKey: "riskdash.evt.title",
+          descKey: "riskdash.evt.desc",
+          message: e.detail || e.kind || "",
+          user_id: e.user_id || undefined,
+          occurred_at: e.created_at ? new Date(e.created_at).toISOString() : new Date().toISOString(),
+        }));
+        setAlerts((prev) => {
+          const merged = [...seeded, ...prev];
+          return merged.slice(0, 300);
+        });
+      })
+      .catch(() => {
+        // 上游不可达不伪造
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const metrics = useMemo(() => {
+    const liqs: any[] = (data as any)?.liquidations ?? [];
+    const liqTotal = liqs.reduce((s, l) => s + (l.equity ?? 0), 0);
+    const net = deposit24h - withdraw24h;
+    return {
+      netDeposit24h: net.toFixed(2),
+      largeWithdrawCount,
+      highRiskIpCount,
+      liquidationTotal: liqTotal.toFixed(2),
+      kycPending,
+    };
+  }, [data, deposit24h, withdraw24h, largeWithdrawCount, highRiskIpCount, kycPending]);
 
   // ─── 接真实数据：爆仓分布 + 钻取明细（来自风控快照 liquidations）────────────
   const liqDist = useMemo(() => {
@@ -447,6 +524,9 @@ export function RiskDashboard() {
           const t = new Date(now - (hours - 1 - i) * 3600000);
           return t.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" });
         });
+        setDeposit24h(deposit.reduce((a, b) => a + b, 0));
+        setWithdraw24h(withdrawal.reduce((a, b) => a + b, 0));
+        setLargeWithdrawCount((wdResp.withdrawals ?? []).filter((w) => (w.amount ?? 0) >= 50000).length);
         setFundFlow({
           time,
           deposit: deposit.map((v) => Math.round(v)),

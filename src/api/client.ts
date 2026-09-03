@@ -376,6 +376,8 @@ export const api = {
     request("/api/admin/risk/blacklist" + buildQuery({ target }), { method: "DELETE" }),
   checkRiskBlacklist: (target: string) =>
     request<{ target: string; blacklisted: boolean }>("/api/admin/risk/blacklist/check" + buildQuery({ target })),
+  getRiskEvents: (params?: Record<string, any>) =>
+    request<{ items: any[]; count: number }>("/api/admin/risk/events" + buildQuery(params)),
   checkRiskWithdraw: (body: {
     user_id: number;
     asset: string;
