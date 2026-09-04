@@ -23,6 +23,7 @@ import { ApiKeys } from "./pages/ApiKeys";
 import { UserDepositAddresses } from "./pages/UserDepositAddresses";
 import { LendingAdmin } from "./pages/LendingAdmin";
 import { BotAdmin } from "./pages/BotAdmin";
+import { CopyTradeAdmin } from "./pages/CopyTradeAdmin";
 import { WealthAdmin } from "./pages/WealthAdmin";
 import { ReferralAdmin } from "./pages/ReferralAdmin";
 import { RiskDashboard } from "./pages/RiskDashboard";
@@ -66,6 +67,7 @@ const PAGES: Record<string, () => JSX.Element> = {
   "/apikeys": ApiKeys,
   "/lending": LendingAdmin,
   "/bot": BotAdmin,
+  "/copytrade": CopyTradeAdmin,
   "/wealth": WealthAdmin,
   "/referral": ReferralAdmin,
   "/c2c": C2C,

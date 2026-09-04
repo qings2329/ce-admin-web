@@ -317,6 +317,16 @@ export const api = {
   botTick: (id: number | string) =>
     request<any>("/api/admin/bot/strategies/" + id + "/tick", { method: "POST", body: "{}" }),
 
+  // ---- 跟单交易管理（代理 copytrade 服务） ----
+  listCopyLeads: () =>
+    request<{ leads: any[] }>("/api/admin/copytrade/leads"),
+  listCopyFollows: () =>
+    request<{ follows: any[] }>("/api/admin/copytrade/follows"),
+  listCopyCopies: () =>
+    request<{ copies: any[] }>("/api/admin/copytrade/copies"),
+  copyReconcile: () =>
+    request<{ balanced: boolean; deviation: Record<string, number> }>("/api/admin/copytrade/reconcile"),
+
   // ---- 期货交易管理（代理 futures 服务）----
   getFuturesPositions: (params?: Record<string, any>) =>
     request<any>("/api/admin/futures/positions" + buildQuery(params)),
