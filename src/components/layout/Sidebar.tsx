@@ -289,11 +289,16 @@ const MENU_ITEMS: MenuItem[] = [
         label: "nav.wealth",
         icon: "PieChart",
       },
-      {
-        path: "/bot",
-        label: "nav.bot",
-        icon: "Bot",
-      },
+       {
+         path: "/bot",
+         label: "nav.bot",
+         icon: "Bot",
+       },
+       {
+         path: "/copytrade",
+         label: "nav.copytrade",
+         icon: "Users",
+       },
       {
         path: "/referral",
         label: "nav.referral",
