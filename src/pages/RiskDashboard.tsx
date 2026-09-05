@@ -331,10 +331,8 @@ function LogDrawer({
             <p className="text-[11px] font-semibold text-muted-foreground mb-2">{t("riskdash.auditTrail")}</p>
             <div className="space-y-1.5 text-[11px] font-mono text-muted-foreground">
               <p>[{formatDateTime(alert.occurred_at)}] risk_engine.alert_emit level={alert.level}</p>
-              <p>[{formatDateTime(alert.occurred_at)}] uid={alert.user_id} score=0.{Math.floor(Math.random() * 900 + 100)}</p>
               <p>[{formatDateTime(alert.occurred_at)}] rule_triggered: [{t(alert.titleKey).replace(/"/g, '\\"')}]</p>
               {alert.amount && <p>[{formatDateTime(alert.occurred_at)}] amount={<MaskedText value={alert.amount} mask="balance" />} coin={alert.coin}</p>}
-              <p>[{formatDateTime(alert.occurred_at)}] model.confidence={(Math.random() * 0.3 + 0.7).toFixed(3)}</p>
             </div>
           </div>
         </div>
