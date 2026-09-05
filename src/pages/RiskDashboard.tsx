@@ -56,51 +56,6 @@ export interface RiskAlert {
   handled?: boolean;
 }
 
-// ─── 模拟风控告警模板（i18n key，渲染时 t() 解析）──────────────────────────────
-const CRITICAL_TEMPLATES = [
-  { titleKey: "riskdash.tpl.withdrawIntercept.title", descKey: "riskdash.tpl.withdrawIntercept.desc" },
-  { titleKey: "riskdash.tpl.washTrading.title", descKey: "riskdash.tpl.washTrading.desc" },
-  { titleKey: "riskdash.tpl.crossBorderIp.title", descKey: "riskdash.tpl.crossBorderIp.desc" },
-  { titleKey: "riskdash.tpl.moneyLaundering.title", descKey: "riskdash.tpl.moneyLaundering.desc" },
-  { titleKey: "riskdash.tpl.highFreqCancel.title", descKey: "riskdash.tpl.highFreqCancel.desc" },
-];
-
-const WARNING_TEMPLATES = [
-  { titleKey: "riskdash.tpl.passwordErrors.title", descKey: "riskdash.tpl.passwordErrors.desc" },
-  { titleKey: "riskdash.tpl.largeTransfer.title", descKey: "riskdash.tpl.largeTransfer.desc" },
-  { titleKey: "riskdash.tpl.newDevice.title", descKey: "riskdash.tpl.newDevice.desc" },
-  { titleKey: "riskdash.tpl.proxyIp.title", descKey: "riskdash.tpl.proxyIp.desc" },
-];
-
-const INFO_TEMPLATES = [
-  { titleKey: "riskdash.tpl.kyc2Pass.title", descKey: "riskdash.tpl.kyc2Pass.desc" },
-  { titleKey: "riskdash.tpl.newFutures.title", descKey: "riskdash.tpl.newFutures.desc" },
-  { titleKey: "riskdash.tpl.whitelistAddr.title", descKey: "riskdash.tpl.whitelistAddr.desc" },
-];
-
-function pickTemplate(level: AlertLevel) {
-  const pool =
-    level === "critical" ? CRITICAL_TEMPLATES
-    : level === "warning" ? WARNING_TEMPLATES
-    : INFO_TEMPLATES;
-  const t = pool[Math.floor(Math.random() * pool.length)];
-  const userId = Math.floor(Math.random() * 50000) + 1000;
-  const coin = ["USDT", "BTC", "ETH"][Math.floor(Math.random() * 3)];
-  const amount = level === "critical"
-    ? parseFloat((Math.random() * 500000 + 100000).toFixed(2))
-    : parseFloat((Math.random() * 50000 + 1000).toFixed(2));
-  const ip = `${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
-  const countries = ["NG", "RU", "IR", "KP", "US", "GB", "DE", "JP", "VN", "BR"];
-  return {
-    ...t,
-    user_id: userId,
-    amount,
-    coin,
-    ip,
-    country: countries[Math.floor(Math.random() * countries.length)],
-  };
-}
-
 // riskEventLevel 将真实风控事件 kind 映射为告警等级：提现/下单/持仓/频率类多半为异常命中。
 function riskEventLevel(kind: string): AlertLevel {
   const k = (kind ?? "").toLowerCase();
@@ -109,34 +64,48 @@ function riskEventLevel(kind: string): AlertLevel {
   return "info";
 }
 
-// ─── WebSocket 模拟 Hook ──────────────────────────────────────────────────────
-function useRiskWebSocket(onAlert: (alert: RiskAlert) => void) {
+// riskEventToAlert 将后端真实风控事件转换为 AlertStream 条目。
+// 真实事件仅含 {id,user_id,kind,detail,created_at}；不含金额/币种/IP 等伪字段。
+function riskEventToAlert(e: any): RiskAlert {
+  return {
+    id: `evt-${e.id}`,
+    level: riskEventLevel(e.kind),
+    titleKey: "riskdash.evt.title",
+    descKey: "riskdash.evt.desc",
+    message: e.detail || e.kind || "",
+    user_id: e.user_id || undefined,
+    occurred_at: e.created_at ? new Date(e.created_at).toISOString() : new Date().toISOString(),
+  };
+}
+
+// ─── 真实风控事件轮询 Hook（替代旧的 setInterval 伪告警）──────────────────────
+// 以 5s 间隔拉取 /api/admin/risk/events，按事件 ID 高水位去重，仅把新增的真实
+// 事件推入告警流；间隔超时/接口异常时保持连接态并记录重连次数，不伪造任何告警。
+function useRiskEventsPolling(onEvent: (event: RiskAlert) => void) {
   const [connected, setConnected] = useState(false);
   const [reconnectCount, setReconnectCount] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastIdRef = useRef(0);
 
   const start = () => {
     setConnected(true);
     setReconnectCount(0);
-    const emit = () => {
-      const r = Math.random();
-      const level: AlertLevel = r < 0.25 ? "critical" : r < 0.6 ? "warning" : "info";
-      const tpl = pickTemplate(level);
-      onAlert({
-        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        level,
-        titleKey: tpl.titleKey,
-        descKey: tpl.descKey,
-        user_id: tpl.user_id,
-        amount: tpl.amount,
-        coin: tpl.coin,
-        ip: tpl.ip,
-        country: tpl.country,
-        occurred_at: new Date().toISOString(),
-      });
+    const poll = async () => {
+      try {
+        const resp: any = await api.getRiskEvents({ limit: 50 });
+        const items: any[] = resp?.items ?? [];
+        // 后端按时间倒序（最新在前）；仅下发 id 超过高水位的新事件
+        const newest = items.filter((e) => Number(e?.id ?? 0) > lastIdRef.current);
+        for (const e of newest) {
+          lastIdRef.current = Math.max(lastIdRef.current, Number(e?.id ?? 0));
+          onEvent(riskEventToAlert(e));
+        }
+      } catch {
+        // 上游不可达不伪造；下次轮询自动重试
+      }
     };
-    emit();
-    intervalRef.current = setInterval(emit, 8000 + Math.random() * 12000);
+    void poll();
+    intervalRef.current = setInterval(() => void poll(), 5000);
   };
 
   const stop = () => {
@@ -385,7 +354,7 @@ export function RiskDashboard() {
   const [logAlert, setLogAlert] = useState<RiskAlert | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [drillParams, setDrillParams] = useState<{ type: "spike" | "symbol"; label: string; timeRange?: string; symbol?: string } | null>(null);
-  const { connected, reconnectCount, reconnect } = useRiskWebSocket((alert) => {
+  const { connected, reconnectCount, reconnect } = useRiskEventsPolling((alert) => {
     setAlerts((prev) => [alert, ...prev].slice(0, 300));
   });
 
@@ -413,36 +382,6 @@ export function RiskDashboard() {
         // 上游不可达时保持 0，不伪造
       }
     })();
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  // ─── 接真实风控事件：启动时用 /api/admin/risk/events 种子化告警流 ────────────
-  useEffect(() => {
-    let alive = true;
-    api
-      .getRiskEvents({ limit: 50 })
-      .then((resp: any) => {
-        if (!alive) return;
-        const items: any[] = resp?.items ?? [];
-        const seeded: RiskAlert[] = items.map((e: any) => ({
-          id: `evt-${e.id}`,
-          level: riskEventLevel(e.kind),
-          titleKey: "riskdash.evt.title",
-          descKey: "riskdash.evt.desc",
-          message: e.detail || e.kind || "",
-          user_id: e.user_id || undefined,
-          occurred_at: e.created_at ? new Date(e.created_at).toISOString() : new Date().toISOString(),
-        }));
-        setAlerts((prev) => {
-          const merged = [...seeded, ...prev];
-          return merged.slice(0, 300);
-        });
-      })
-      .catch(() => {
-        // 上游不可达不伪造
-      });
     return () => {
       alive = false;
     };
