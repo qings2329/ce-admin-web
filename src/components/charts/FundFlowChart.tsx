@@ -9,43 +9,6 @@ import { RefreshCw } from "lucide-react";
 
 echarts.use([CanvasRenderer]);
 
-// ─── 模拟充提趋势数据（24h，每 5 分钟一个点）───────────────────────────────────
-function generateFundFlow() {
-  const now = Date.now();
-  const points = 288;
-  const deposit: number[] = [];
-  const withdrawal: number[] = [];
-  let baseD = 500000;
-  let baseW = 480000;
-  const spikes: { idx: number; ts: string; labelKey: string }[] = [];
-
-  for (let i = 0; i < points; i++) {
-    const t = new Date(now - (points - i) * 5 * 60 * 1000);
-    const noise = () => (Math.random() - 0.5) * 80000;
-    const cycle = Math.sin((i / points) * Math.PI * 4) * 60000;
-    const d = Math.max(10000, baseD + noise() + cycle);
-    const w = Math.max(10000, baseW + noise() * 1.3 + cycle * 0.8);
-    deposit.push(parseFloat(d.toFixed(0)));
-    withdrawal.push(parseFloat(w.toFixed(0)));
-
-    if (Math.random() < 0.015 && spikes.length < 3) {
-      const labelKeys = ["riskdash.spike.withdrawAnomaly", "riskdash.spike.depositPeak", "riskdash.spike.batchTransfer"];
-      spikes.push({ idx: i, ts: t.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" }), labelKey: labelKeys[spikes.length % 3] });
-      deposit[i] = parseFloat((deposit[i] * (1.5 + Math.random())).toFixed(0));
-      withdrawal[i] = parseFloat((withdrawal[i] * (1.8 + Math.random())).toFixed(0));
-    }
-  }
-  return {
-    time: Array.from({ length: points }, (_, i) => {
-      const t = new Date(now - (points - i) * 5 * 60 * 1000);
-      return t.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" });
-    }),
-    deposit,
-    withdrawal,
-    spikes,
-  };
-}
-
 interface FundFlowProps {
   time: string[];
   deposit: number[];
@@ -61,9 +24,9 @@ interface FundFlowChartProps {
 
 export function FundFlowChart({ data, onSpikeClick }: FundFlowChartProps) {
   const { t } = useI18n();
-  const [fallback] = useState(generateFundFlow);
-  const flowData = data && data.time.length > 0 ? data : fallback;
   const [activeSpike, setActiveSpike] = useState<number | null>(null);
+  const empty = data && data.time.length > 0 ? false : true;
+  const flowData = empty ? { time: [], deposit: [], withdrawal: [], spikes: [] } : data!;
 
   const handleSpikeClick = (params: any) => {
     if (params.componentType === "markPoint") {
@@ -175,12 +138,21 @@ export function FundFlowChart({ data, onSpikeClick }: FundFlowChartProps) {
         </Button>
       </CardHeader>
       <CardContent className="pt-0">
-        <EChartsReact
-          option={option}
-          style={{ height: 220 }}
-          onEvents={{ click: handleSpikeClick }}
-        />
-        <p className="text-[11px] text-muted-foreground mt-1">{t("riskdash.chart.hint")}</p>
+        {empty ? (
+          <div className="flex h-[220px] flex-col items-center justify-center gap-2 text-xs text-muted-foreground">
+            <span className="text-2xl">—</span>
+            {t("riskdash.chart.noDepositData")}
+          </div>
+        ) : (
+          <>
+            <EChartsReact
+              option={option}
+              style={{ height: 220 }}
+              onEvents={{ click: handleSpikeClick }}
+            />
+            <p className="text-[11px] text-muted-foreground mt-1">{t("riskdash.chart.hint")}</p>
+          </>
+        )}
       </CardContent>
     </Card>
   );

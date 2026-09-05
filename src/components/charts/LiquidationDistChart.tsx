@@ -1,20 +1,11 @@
 import * as echarts from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
 import EChartsReact from "echarts-for-react";
-import { useState } from "react";
 import { useI18n } from "../../i18n";
 import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
 import { Badge } from "../ui/badge";
 
 echarts.use([CanvasRenderer]);
-
-function genLiqData() {
-  const symbols = ["BTC_USDT", "ETH_USDT", "SOL_USDT", "BNB_USDT", "XRP_USDT", "DOGE_USDT"];
-  return symbols.map((s) => ({
-    name: s,
-    value: Math.floor(Math.random() * 800000) + 50000,
-  }));
-}
 
 interface LiquidationDistChartProps {
   data?: { name: string; value: number }[];
@@ -23,8 +14,8 @@ interface LiquidationDistChartProps {
 
 export function LiquidationDistChart({ data, onSymbolClick }: LiquidationDistChartProps) {
   const { t } = useI18n();
-  const [fallback] = useState(() => genLiqData());
-  const chartData = data && data.length > 0 ? data : fallback;
+  const empty = data && data.length > 0 ? false : true;
+  const chartData = empty ? [] : data!;
 
   const option = {
     backgroundColor: "transparent",
@@ -74,8 +65,17 @@ export function LiquidationDistChart({ data, onSymbolClick }: LiquidationDistCha
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <EChartsReact option={option} style={{ height: 200 }} onEvents={{ click: handleClick }} />
-        <p className="text-[11px] text-muted-foreground mt-1 text-center">{t("riskdash.chart.clickDrilldown")}</p>
+        {empty ? (
+          <div className="flex h-[200px] flex-col items-center justify-center gap-2 text-xs text-muted-foreground">
+            <span className="text-2xl">—</span>
+            {t("riskdash.chart.noLiqData")}
+          </div>
+        ) : (
+          <>
+            <EChartsReact option={option} style={{ height: 200 }} onEvents={{ click: handleClick }} />
+            <p className="text-[11px] text-muted-foreground mt-1 text-center">{t("riskdash.chart.clickDrilldown")}</p>
+          </>
+        )}
       </CardContent>
     </Card>
   );
