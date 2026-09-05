@@ -353,7 +353,7 @@ export function RiskDashboard() {
   const [alerts, setAlerts] = useState<RiskAlert[]>([]);
   const [logAlert, setLogAlert] = useState<RiskAlert | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  const [drillParams, setDrillParams] = useState<{ type: "spike" | "symbol"; label: string; timeRange?: string; symbol?: string } | null>(null);
+  const [drillParams, setDrillParams] = useState<{ type: "spike" | "symbol"; label: string; timeRange?: string; symbol?: string; window?: { start: number; end: number } } | null>(null);
   const { connected, reconnectCount, reconnect } = useRiskEventsPolling((alert) => {
     setAlerts((prev) => [alert, ...prev].slice(0, 300));
   });
@@ -424,7 +424,17 @@ export function RiskDashboard() {
     }));
   }, [data]);
 
-  // ─── 真实充提流水 → 近 24h 资金流走势（按小时分桶，无则留空不伪造）──────────
+  // spikeWindow 将资金流图中某个桶位的 index 换算为真实时间窗口（毫秒）。
+// fundFlow.time 为按从旧到新排列的小时桶，最后一个桶即「现在」。
+function spikeWindow(idx: number, bucketCount: number): { start: number; end: number } {
+  const bucketMs = 3600000;
+  const now = Date.now();
+  const pos = Math.max(0, Math.min(idx, bucketCount - 1));
+  const end = now - (bucketCount - 1 - pos) * bucketMs;
+  return { start: end - bucketMs, end };
+}
+
+// ─── 真实充提流水 → 近 24h 资金流走势（按小时分桶，无则留空不伪造）──────────
   const [fundFlow, setFundFlow] = useState<{
     time: string[];
     deposit: number[];
@@ -508,6 +518,7 @@ export function RiskDashboard() {
       type: "spike",
       label: spike.labelKey,
       timeRange: `${spike.ts}`,
+      window: spikeWindow(spike.idx, fundFlow.time.length),
     });
   };
 

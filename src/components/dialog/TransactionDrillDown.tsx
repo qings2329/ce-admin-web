@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useI18n } from "../../i18n";
+import { api } from "../../api/client";
 import { formatDateTime } from "../../lib/timezone";
 import { CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
@@ -22,6 +23,7 @@ interface DrillDownParams {
   label: string;
   timeRange?: string;
   symbol?: string;
+  window?: { start: number; end: number };
 }
 
 interface DrillRow {
@@ -34,22 +36,18 @@ interface DrillRow {
   time: string;
 }
 
-function generateDrillRows(count: number): DrillRow[] {
-  const rows: DrillRow[] = [];
-  const coins = ["USDT", "BTC", "ETH"];
-  const statuses = ["pending", "approved", "rejected", "completed"];
-  for (let i = 0; i < count; i++) {
-    rows.push({
-      id: String(Math.floor(Math.random() * 9e8) + 1e8),
-      user_id: Math.floor(Math.random() * 50000) + 1000,
-      coin: coins[Math.floor(Math.random() * coins.length)],
-      amount: parseFloat((Math.random() * 200000 + 10000).toFixed(2)),
-      tx_hash: `0x${Array.from({ length: 16 }, () => Math.floor(Math.random() * 16).toString(16)).join("")}`,
-      status: statuses[Math.floor(Math.random() * statuses.length)],
-      time: new Date(Date.now() - Math.random() * 3600000).toISOString(),
-    });
+function parseTimeMs(v: any): number {
+  const t = new Date(v ?? 0).getTime();
+  if (!t || Number.isNaN(t)) {
+    const n = Number(v);
+    return Number.isNaN(n) ? 0 : n >= 1e15 ? n / 1e9 : n;
   }
-  return rows;
+  return t;
+}
+
+function formatIso(v: any): string {
+  const ms = parseTimeMs(v);
+  return new Date(ms).toISOString();
 }
 
 interface TransactionDrillDownProps {
@@ -67,22 +65,70 @@ export function TransactionDrillDown({ params, rows, onClose }: TransactionDrill
 
   useEffect(() => {
     if (!params) return;
+    let alive = true;
+    if (params.window) {
+      const win = params.window;
+      setLoading(true);
+      setError(null);
+      (async () => {
+        try {
+          const [depResp, wdResp] = await Promise.all([
+            api.listDeposits({ limit: 1000 }),
+            api.listWithdrawals({ limit: 1000 }),
+          ]);
+          if (!alive) return;
+          const deps = (depResp.deposits ?? []).filter((d: any) => {
+            const t = parseTimeMs(d.time ?? d.created_at);
+            return t >= win.start && t <= win.end;
+          });
+          const wds = (wdResp.withdrawals ?? []).filter((w: any) => {
+            const t = parseTimeMs(w.time ?? w.created_at);
+            return t >= win.start && t <= win.end;
+          });
+          setLocalRows([
+            ...deps.map((d: any) => ({
+              id: d.id ?? d.tx_hash ?? String(d.user_id),
+              user_id: d.user_id,
+              coin: d.coin,
+              amount: d.amount,
+              tx_hash: d.tx_hash,
+              status: d.status,
+              time: formatIso(d.time ?? d.created_at),
+            })),
+            ...wds.map((w: any) => ({
+              id: w.id ?? w.tx_hash ?? String(w.user_id),
+              user_id: w.user_id,
+              coin: w.coin,
+              amount: w.amount,
+              tx_hash: w.tx_hash,
+              status: w.status,
+              time: formatIso(w.time ?? w.created_at),
+            })),
+          ]);
+          setLoading(false);
+        } catch {
+          if (alive) {
+            setError("riskdash.drill.fetchError");
+            setLoading(false);
+          }
+        }
+      })();
+      return () => {
+        alive = false;
+      };
+    }
     if (rows && rows.length > 0) {
       setLocalRows(rows);
       setLoading(false);
       setError(null);
       return;
     }
-    setLoading(true);
+    setLocalRows([]);
+    setLoading(false);
     setError(null);
-    setTimeout(() => {
-      const mock = generateDrillRows(15 + Math.floor(Math.random() * 10));
-      setLocalRows(mock);
-      setLoading(false);
-    }, 600);
   }, [params, rows]);
 
-  const displayRows = rows && rows.length > 0 ? rows : localRows;
+  const displayRows = params?.window ? localRows : rows && rows.length > 0 ? rows : localRows;
 
   const filteredRows = useMemo(() => {
     let base = displayRows;
@@ -131,7 +177,7 @@ export function TransactionDrillDown({ params, rows, onClose }: TransactionDrill
           <Badge variant="secondary" className="text-[10px]">{filteredRows.length} {t("riskdash.drill.records")}</Badge>
         </div>
         <div className="flex-1 overflow-y-auto p-4">
-          {error && <Alert variant="error">{error}</Alert>}
+          {error && <Alert variant="error">{t(error)}</Alert>}
           {loading ? (
             <div className="flex flex-col items-center justify-center py-12 gap-2">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
